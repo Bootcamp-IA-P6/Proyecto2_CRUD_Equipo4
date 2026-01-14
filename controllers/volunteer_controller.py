@@ -35,6 +35,6 @@ def delete_volunteer(db: Session, id: int):
     if not volunteer:
         return None
 
-    volunteer.status = "inactive"
+    volunteer.status = "suspended"
     db.commit()
     return volunteer

@@ -2,16 +2,10 @@ from sqlalchemy import Column, Integer, Enum, ForeignKey, DateTime
 from database.database import Base
 import enum
 from datetime import datetime
-
-
-class VolunteerStatus(enum.Enum):
-    active = "active"
-    inactive = "inactive"
-    suspended = "suspended"
-
+from domain.volunteer_enum import VolunteerStatus
 
 class Volunteer(Base):
-    __tablename__ = "volunteer"
+    __tablename__ = "volunteers"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("user.id"), unique=True, nullable=False)

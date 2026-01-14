@@ -1,13 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from enum import Enum
 from datetime import datetime
-
-
-class VolunteerStatus(str, Enum):
-    active = "active"
-    inactive = "inactive"
-    suspended = "suspended"
-
+from domain.volunteer_enum import VolunteerStatus
 
 class VolunteerBase(BaseModel):
     user_id: int
@@ -27,5 +21,6 @@ class VolunteerOut(VolunteerBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+
+    model_config = ConfigDict(from_attributes=True)
+

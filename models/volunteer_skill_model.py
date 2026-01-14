@@ -5,5 +5,5 @@ class VolunteerSkill(Base):
     __tablename__ = "volunteers_skills"
 
     id = Column(Integer, primary_key=True)
-    volunteer_id = Column(Integer, ForeignKey("volunteer.id"), nullable=False)
+    volunteer_id = Column(Integer, ForeignKey("volunteers.id"), nullable=False)
     skill_id = Column(Integer, ForeignKey("skills.id"), nullable=False)
