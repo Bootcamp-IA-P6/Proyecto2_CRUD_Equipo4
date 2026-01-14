@@ -8,7 +8,7 @@ class Volunteer(Base):
     __tablename__ = "volunteers"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("user.id"), unique=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
     status = Column(Enum(VolunteerStatus), default=VolunteerStatus.active, nullable=False)
 
     created_at = Column(DateTime, default=datetime.utcnow)
