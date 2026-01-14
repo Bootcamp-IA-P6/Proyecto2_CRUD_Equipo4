@@ -29,5 +29,4 @@ def get_db():
     finally:
         db.close()  # Cierra la sesión al terminar
 
-# Esta función crea una sesión para trabajar con la base de datos, la devuelve mientras haces algo (yield db) y la cierra automáticamente al terminar.
-# Se usa mucho en frameworks como FastAPI para que cada petición tenga su propia sesión limpia.
+
