@@ -3,6 +3,7 @@ from models.users_model import User
 from schemas import users_schema
 from fastapi import HTTPException
 from utils.security import hash_password
+from datetime import datetime
 
 
 class UserController:
@@ -30,7 +31,7 @@ class UserController:
             password=hashed_password,
             phone=user.phone,
             birth_date=user.birth_date,
-            role_id=user.role_id
+            #role_id=user.role_id
             )
         db.add(db_user)
         db.commit()

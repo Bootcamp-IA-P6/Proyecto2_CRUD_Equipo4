@@ -10,7 +10,7 @@ class UserCreate(BaseModel):
     password: str
     phone: str | None = None
     birth_date: date | None = None
-    role_id: int
+    #role_id: int
 
 class UserOut(BaseModel):
     name: str
