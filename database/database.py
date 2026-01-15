@@ -7,13 +7,22 @@ from config.config_variables import settings
 DB_USER = settings.DB_USERNAME
 DB_PASSWORD = settings.DB_PASSWORD
 DB_HOST = settings.DB_HOST
-DB_DEV_NAME = settings.DB_DEV_NAME
+DB_DEV_NAME = settings.DB_NAME
 
 # Conexión con la base de datos
-DATABASE_URL = "mysql+pymysql://"+DB_USER+":"+DB_PASSWORD+"@"+DB_HOST+"/"+DB_DEV_NAME+""  # MySQL
+#DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:3306/{DB_DEV_NAME}"
 
 # Crea un engine
-engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    "mysql+pymysql://",  # dejamos la URL vacía
+    connect_args={
+        "host": DB_HOST,
+        "user": DB_USER,
+        "password": DB_PASSWORD,
+        "database": DB_DEV_NAME,
+        "port": int(3306)
+    }
+)
 
 # Crea una clase para configurar la sesión
 Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
