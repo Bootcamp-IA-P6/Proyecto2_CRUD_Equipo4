@@ -1,20 +1,9 @@
 from datetime import datetime, date
-from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Column, Integer, String, Date, ForeignKey, DateTime, func
 from database.database import Base
 from typing import Optional
 
-
-class Base(DeclarativeBase):
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
-    )
-    deleted_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=True, default=None
-    )
 
 
 class User(Base):
