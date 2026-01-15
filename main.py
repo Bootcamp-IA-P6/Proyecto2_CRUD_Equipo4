@@ -1,7 +1,7 @@
 import models
 from fastapi import FastAPI
 from database.database import Base, engine
-from routes.volunteer_routes import router as volunteer_router
+from routes import volunteer_routes, users_routes
 
 
 #print("MODELOS REGISTRADOS:", Base.metadata.tables.keys())
@@ -9,7 +9,13 @@ app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
 
-app.include_router(volunteer_router)
-@app.get("/")
-def root():
-    return {"status": "API funcionando"}
+
+app.include_router(volunteer_routes)
+app.include_router(users_routes.user_router)
+
+"""
+@app.on_event("startup")
+async def startup():
+    users_model.Base.metadata.create_all(bind=engine)
+
+    """
