@@ -1,41 +1,42 @@
 from sqlalchemy.orm import Session
-from schemas import category_schemas  
 from models.category_model import Category
-
-class CategoryControllers:
-
+from schemas.category_schemas import CategoryCreate
 
 
-    @staticmethod
-    async def get_Catecory(db: Session, skip: int = 0, limit: int = 100):
-            return db.query(Category).offset(skip).limit(limit).all()
+def create_category(db: Session, data: CategoryCreate):
+    category = Category(**data.dict())
+    db.add(category)
+    db.commit()
+    db.refresh(category)
+    return category
 
-    @staticmethod # Cada función es como un trabajador independiente que llega con su propio conjunto de herramientas (db) y hace su tarea.
-    async def get_Category(db: Session, Category_id: int):
-        return db.query(Category).filter(Category.id == Category_id).first()
 
-    @staticmethod
-    async def create_Category(db: Session, Category: category_schemas.CategoryCreate):
-            db_Category = Category(**Category.dict())
-            db.add(db_Category)
-            db.commit()
-            db.refresh(db_Category)
-            return db_Category
-  
-    @staticmethod
-    async def update_Category(db: Session, Category_id: int, Category: Category_schemas.CategoryCreate):
-        db_Category = db.query(Category).filter(Category.id == Category_id).first()
-        if db_Category:
-            db_Category.title = Category.title
-            db_Category.description = Category.description
-            db.commit()
-            db.refresh(db_Category)
-        return db_Category
-    
-    @staticmethod
-    async def delete_Category(db: Session, Category_id: int):
-        db_Category = db.query(Category).filter(Category.id == Category_id).first()
-        if db_Category:
-            db.delete(db_Category)
-            db.commit()
-        return db_Category
+def get_categories(db: Session):
+    return db.query(Category).all()
+
+def get_category(db: Session, id: int):
+    return db.query(Category).filter(Category.id == id).first()
+
+def update_category(db: Session, id: int, data: CategoryCreate):
+    category = get_category(db, id)
+
+    if not category:
+        return None
+
+    category.name = data.name
+    category.description = data.description
+    db.commit()
+    db.refresh(category)
+
+    return category
+
+def delete_category(db: Session, id: int):
+    category = get_category(db, id)
+
+    if not category:
+        return None
+
+    db.delete(category)
+    db.commit()
+    return category
+
