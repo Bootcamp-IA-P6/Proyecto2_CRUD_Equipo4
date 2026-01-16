@@ -21,5 +21,5 @@ class Project(Base):
 
     category_id : Mapped[int] = mapped_column(Integer, ForeignKey('categories.id'))
 
-    category = relationship("Category", back_populates="projects")
+    category = relationship("Category")
 

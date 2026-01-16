@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
 from domain.projects_enums import Project_status, Project_priority
+from schemas.category_schemas import CategoryOut
 
 
 class ProjectBase(BaseModel):
@@ -21,6 +22,7 @@ class ProjectUpdate(BaseModel):
     deadline: Optional[datetime] = None
     status: Optional[Project_status] = None
     priority: Optional[Project_priority] = None
+    category_id : Optional[int] = None
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -29,5 +31,6 @@ class ProjectOut(ProjectBase):
     created_at: datetime
     updated_at: datetime
     deleted_at: Optional[datetime]
+    category: Optional[CategoryOut] = None
     
     model_config = ConfigDict(from_attributes=True)
