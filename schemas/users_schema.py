@@ -3,21 +3,25 @@ from datetime import date, datetime
 from pydantic import ConfigDict
 from typing import Optional
 
-
-class UserCreate(BaseModel):
+class UserBase(BaseModel):
     name: str
     email: EmailStr
     password: str
     phone: str | None = None
     birth_date: date | None = None
-    #role_id: int
+
+class UserCreate(BaseModel):
+    pass
 
 class UserOut(BaseModel):
+    id: int
     name: str
     email: EmailStr
     phone: str | None
     birth_date: date | None
     
+    model_config = ConfigDict(from_attributes=True)
+
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
@@ -25,5 +29,4 @@ class UserUpdate(BaseModel):
     phone: Optional[str] = None
     birth_date: Optional[date] = None
     #role_id: Optional[int] = None solo si se podra cambiar de rol 
-    
-    model_config = ConfigDict(from_attributes=True)
+

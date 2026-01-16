@@ -22,8 +22,6 @@ async def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_
 @user_router.get("/{user_id}", response_model=users_schema.UserOut)
 async def read_user(user_id: int, db: Session = Depends(get_db)):
     user = await UserController.get_one_user(db, user_id=user_id)
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
     return user
 
 #CREATE USER
@@ -36,8 +34,6 @@ async def create_user(user: users_schema.UserCreate, db: Session = Depends(get_d
 @user_router.put("/{user_id}", response_model=users_schema.UserOut)
 async def update_user(user_id: int, user: users_schema.UserUpdate, db: Session = Depends(get_db)):
     updated_user = await UserController.update_user(db, user_id=user_id, user=user)
-    if updated_user is None: 
-        raise HTTPException(status_code=404, detail="User not found")
     return updated_user
 
 #SOFT DELETE USER
