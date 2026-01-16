@@ -15,4 +15,4 @@ class User(Base):
     birth_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     role_id: Mapped[int] = mapped_column(ForeignKey('role.id'), nullable=False, default=2)
     
-    role: Mapped["Role"] = relationship(back_populates="users")
+    role = relationship("Role", back_populates="users")

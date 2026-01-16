@@ -14,30 +14,30 @@ user_router = APIRouter(
 
 #GET ALL
 @user_router.get("/", response_model=List[users_schema.UserOut])
-async def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    users = await UserController.get_users(db, skip=skip, limit=limit)
+def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    users = UserController.get_users(db, skip=skip, limit=limit)
     return users
 
 #GET USER BY ID
 @user_router.get("/{user_id}", response_model=users_schema.UserOut)
-async def read_user(user_id: int, db: Session = Depends(get_db)):
-    user = await UserController.get_one_user(db, user_id=user_id)
+def read_user(user_id: int, db: Session = Depends(get_db)):
+    user = UserController.get_one_user(db, user_id=user_id)
     return user
 
 #CREATE USER
 @user_router.post("/", response_model=users_schema.UserOut)
-async def create_user(user: users_schema.UserCreate, db: Session = Depends(get_db)):
-    new_user = await UserController.create_user(db, user=user)
+def create_user(user: users_schema.UserCreate, db: Session = Depends(get_db)):
+    new_user = UserController.create_user(db, user=user)
     return new_user
 
 #UPDATE USER
 @user_router.put("/{user_id}", response_model=users_schema.UserOut)
-async def update_user(user_id: int, user: users_schema.UserUpdate, db: Session = Depends(get_db)):
-    updated_user = await UserController.update_user(db, user_id=user_id, user=user)
+def update_user(user_id: int, user: users_schema.UserUpdate, db: Session = Depends(get_db)):
+    updated_user = UserController.update_user(db, user_id=user_id, user=user)
     return updated_user
 
 #SOFT DELETE USER
 @user_router.delete("/{user_id}", response_model=users_schema.UserOut)
-async def delete_user(user_id: int, db: Session = Depends(get_db)):
-    deleted_user = await UserController.delete_user(db, user_id=user_id)
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    deleted_user = UserController.delete_user(db, user_id=user_id)
     return deleted_user

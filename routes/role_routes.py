@@ -13,16 +13,16 @@ role_router = APIRouter(
 
 #GET ALL
 @role_router.get("/", response_model=list[role_schema.RoleOut])
-async def read_roles(db: Session = Depends(get_db)):
-    return await RoleController.get_roles(db)
+def read_roles(db: Session = Depends(get_db)):
+    return RoleController.get_roles(db)
 
 #GET ROLE BY ID
 @role_router.get("/{role_id}", response_model=role_schema.RoleOut)
-async def read_role(role_id: int, db: Session = Depends(get_db)):
-    role = await RoleController.get_one_role(db, role_id=role_id)
+def read_role(role_id: int, db: Session = Depends(get_db)):
+    role = RoleController.get_one_role(db, role_id=role_id)
 
 #POST 
 @role_router.post("/", response_model=role_schema.RoleOut)
-async def create_role(role: role_schema.RoleCreate, db: Session = Depends(get_db)):
+def create_role(role: role_schema.RoleCreate, db: Session = Depends(get_db)):
     #permisos futuros para admin
-    return await RoleController.create_role(db, role)
+    return RoleController.create_role(db, role)
