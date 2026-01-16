@@ -10,10 +10,10 @@ class UserBase(BaseModel):
     phone: str | None = None
     birth_date: date | None = None
 
-class UserCreate(BaseModel):
+class UserCreate(UserModel):
     pass
 
-class UserOut(BaseModel):
+class UserOut(UserModel):
     id: int
     name: str
     email: EmailStr
@@ -22,11 +22,13 @@ class UserOut(BaseModel):
     
     model_config = ConfigDict(from_attributes=True)
 
-class UserUpdate(BaseModel):
+class UserUpdate(UserModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
     password: Optional[str] = None
     phone: Optional[str] = None
     birth_date: Optional[date] = None
     #role_id: Optional[int] = None solo si se podra cambiar de rol 
+    
+    model_config = ConfigDict(from_attributes=True)
 

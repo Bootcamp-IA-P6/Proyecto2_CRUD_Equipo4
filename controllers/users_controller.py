@@ -71,4 +71,4 @@ class UserController:
         db_user.deleted_at = datetime.utcnow()
         db.commit()
         db.refresh(db_user)
-        return db_user
+        return None
