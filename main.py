@@ -1,8 +1,8 @@
 import models
 from fastapi import FastAPI
 from database.database import Base, engine
-from routes import volunteer_routes, users_routes
-from routes.project_routes import router
+from routes import volunteer_routes, users_routes, project_routes
+
 
 
 #print("MODELOS REGISTRADOS:", Base.metadata.tables.keys())
@@ -12,7 +12,7 @@ app = FastAPI()
 
 app.include_router(users_routes.user_router)
 app.include_router(volunteer_routes.router)
-app.include_router(router, prefix="/v1")
+app.include_router(project_routes.project_router)
 
 
 """

@@ -2,8 +2,8 @@ import enum
 
 
 class Project_status(enum.Enum):
-    not_asigned = "not asigned"
-    asigned = "asigned"
+    not_assigned = "not assigned"
+    assigned = "assigned"
     completed="completed"
 
 class Project_priority(enum.Enum):
