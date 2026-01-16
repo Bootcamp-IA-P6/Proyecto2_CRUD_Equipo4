@@ -20,6 +20,8 @@ from models.skill_model import Skill
 from models.volunteer_skill_model import VolunteerSkill
 from models.project_model import Project
 from models.category_model import Category
+from models.role_model import Role
+
 
 # metadata de todos los modelos
 target_metadata = Base.metadata
