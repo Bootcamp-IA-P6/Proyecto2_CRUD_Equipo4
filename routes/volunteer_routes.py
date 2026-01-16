@@ -23,21 +23,12 @@ def list_all(db: Session = Depends(get_db)):
 
 @router.get("/{id}", response_model=VolunteerOut)
 def get_one(id: int, db: Session = Depends(get_db)):
-    volunteer = get_volunteer(db, id)
-    if not volunteer:
-        raise HTTPException(status_code=404, detail="Volunteer not found")
-    return volunteer
+    return get_volunteer(db, id)
 
 @router.put("/{id}", response_model=VolunteerOut)
 def update(id: int, data: VolunteerUpdate, db: Session = Depends(get_db)):
-    volunteer = update_volunteer(db, id, data)
-    if not volunteer:
-        raise HTTPException(status_code=404, detail="Volunteer not found")
-    return volunteer
+    return update_volunteer(db, id, data)
 
 @router.delete("/{id}", response_model=VolunteerOut)
 def delete(id: int, db: Session = Depends(get_db)):
-    volunteer = delete_volunteer(db, id)
-    if not volunteer:
-        raise HTTPException(status_code=404, detail="Volunteer not found")
-    return volunteer
+    return delete_volunteer(db, id)
