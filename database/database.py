@@ -11,7 +11,11 @@ DB_HOST = settings.DB_HOST
 DB_DEV_NAME = settings.DB_DEV_NAME
 
 # Conexión con la base de datos
-#DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:3306/{DB_DEV_NAME}"
+# DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:3306/{DB_DEV_NAME}"
+# engine = create_engine(
+#     DATABASE_URL,
+#     echo=True  
+# )
 
 # Crea un engine
 engine = create_engine(
