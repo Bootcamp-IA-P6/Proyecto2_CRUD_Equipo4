@@ -2,7 +2,7 @@ import enum
 from datetime import datetime
 
 from sqlalchemy import  Integer, String, DateTime, Text, ForeignKey, Enum
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional
 
 from database.database import Base
@@ -19,7 +19,7 @@ class Project(Base):
     status: Mapped[Project_status] = mapped_column(Enum(Project_status), default=Project_status.not_assigned, nullable=False)
     priority: Mapped[Project_priority] = mapped_column(Enum(Project_priority), default=Project_priority.medium)
 
-    #category_id = Column(Integer, ForeignKey('category.id'))
+    category_id : Mapped[int] = mapped_column(Integer, ForeignKey('categories.id'))
 
-    #category = relationship("Category", back_populates="Project")
+    category = relationship("Category", back_populates="projects")
 

@@ -10,7 +10,7 @@ class ProjectBase(BaseModel):
     deadline: datetime
     status: Project_status = Project_status.not_assigned
     priority: Project_priority = Project_priority.medium
-    #category_id : int
+    category_id : int
 
 class ProjectCreate(ProjectBase):
     pass
