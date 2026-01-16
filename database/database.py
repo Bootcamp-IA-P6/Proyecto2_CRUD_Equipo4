@@ -10,10 +10,15 @@ DB_PASSWORD = settings.DB_PASSWORD
 DB_HOST = settings.DB_HOST
 DB_DEV_NAME = settings.DB_DEV_NAME
 
-# Conexión con la base de datos
-#DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:3306/{DB_DEV_NAME}"
+
+# database url
+DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:3306/{DB_DEV_NAME}"
 
 # Crea un engine
+engine = create_engine(DATABASE_URL)
+
+'''
+
 engine = create_engine(
     "mysql+pymysql://",  # dejamos la URL vacía
     connect_args={
@@ -24,7 +29,7 @@ engine = create_engine(
         "port": int(3306)
     }
 )
-
+'''
 class Base(DeclarativeBase):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
@@ -49,5 +54,4 @@ def get_db():
         yield db  # Usa la sesión
     finally:
         db.close()  # Cierra la sesión al terminar
-
 
