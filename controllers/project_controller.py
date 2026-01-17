@@ -3,7 +3,11 @@ import datetime
 from sqlalchemy.orm import Session
 from schemas import project_schema as schema
 from models.project_model import Project
+from sqlalchemy.exc import IntegrityError
+from fastapi import HTTPException
+from config.logging_config import get_logger
 
+logger = get_logger("project")
 
 class ProjectController:
 
@@ -21,42 +25,66 @@ class ProjectController:
     @staticmethod
     async def get_item(db: Session, item_id: int) -> schema.ProjectOut:
         item = db.query(Project).filter(Project.id == item_id).first()
+        if not item:
+            logger.warning(f"Project with id {id} does not exist")
+            raise HTTPException(status_code=404, detail="Item not found")
         return schema.ProjectOut.model_validate(item) if item else None
 
     @staticmethod
     async def create_item(db: Session, item: schema.ProjectCreate)-> schema.ProjectOut:
+        logger.info(f"Trying to create project for ={id}")
+        
         db_item = Project(**item.dict())
-        db.add(db_item)
-        db.commit()
-        db.refresh(db_item)
-        return schema.ProjectOut.model_validate(db_item)
+
+        try:
+            db.add(db_item)
+            db.commit()
+            db.refresh(db_item)
+            return schema.ProjectOut.model_validate(db_item)
+        except IntegrityError as e:
+            db.rollback()
+            logger.error(f"Error creating project: {e}")
+            raise HTTPException(status_code=409, detail=f"Project violates a database constraint")
+
 
 
     @staticmethod
     async def update_item(db: Session, item_id: int, item: schema.ProjectCreate) -> schema.ProjectOut:
         db_item = db.query(Project).filter(Project.id == item_id).first()
-        if db_item:
-            if item.name is not None:
-                db_item.name = item.name
-            if item.description is not None:
-                db_item.description = item.description
-            if item.deadline is not None:
-                db_item.deadline = item.deadline
-            if item.status is not None:
-                db_item.status = item.status
-            if item.priority is not None:
-                db_item.priority = item.priority
-            
-            db.commit()
-            db.refresh(db_item)
-            return schema.ProjectOut.model_validate(db_item)
-        return None
+        try: 
+            if db_item:
+                if item.name is not None:
+                    db_item.name = item.name
+                if item.description is not None:
+                    db_item.description = item.description
+                if item.deadline is not None:
+                    db_item.deadline = item.deadline
+                if item.status is not None:
+                    db_item.status = item.status
+                if item.priority is not None:
+                    db_item.priority = item.priority
+                
+                db.commit()
+                db.refresh(db_item)
+                return schema.ProjectOut.model_validate(db_item)
+        except IntegrityError:
+            db.rollback()
+            logger.error(f"Invalid data: Error updating project")
+            raise HTTPException(status_code=400, detail="Invalid data: Error updating project")
+    
+
 
 
     @staticmethod
     async def delete_item(db: Session, item_id: int):
         db_item = db.query(Project).filter(Project.id == item_id).first()
-        if db_item:
-            db.delete(db_item)
-            db.commit()
-        return None
+        try:
+
+            if db_item:
+                db.delete(db_item)
+                db.commit()
+            return None
+        except IntegrityError:
+            db.rollback()
+            logger.error(f"Invalid data: Error deleting projects")
+            raise HTTPException(status_code=400, detail="Invalid data: Error deleting project")

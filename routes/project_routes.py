@@ -19,10 +19,7 @@ async def new_item(item: project_schema.ProjectCreate, db: Session = Depends(get
 
 @project_router.get("/items/{item_id}", response_model=project_schema.ProjectOut)
 async def read_item(item_id: int, db: Session = Depends(get_db)):
-    db_item = await ProjectController.get_item(db, item_id=item_id)
-    if db_item is None:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return db_item
+    return await ProjectController.get_item(db, item_id=item_id)
 
 # Obtener lista de items
 @project_router.get("/items/", response_model=List[project_schema.ProjectOut])
@@ -32,15 +29,10 @@ async def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_
 # Actualizar un item
 @project_router.put("/items/{item_id}", response_model=project_schema.ProjectOut)
 async def update_item(item_id: int, item: project_schema.ProjectUpdate, db: Session = Depends(get_db)):
-    db_item = await ProjectController.update_item(db, item_id, item)
-    if db_item is None:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return db_item
+    return await ProjectController.update_item(db, item_id, item)
+    
 
 # Borrar un item
 @project_router.delete("/items/{item_id}", response_model=project_schema.ProjectOut)
 async def delete_item(item_id: int, db: Session = Depends(get_db)):
-    db_item = await ProjectController.delete_item(db, item_id)
-    if db_item is None:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return db_item
+    return await ProjectController.delete_item(db, item_id)
