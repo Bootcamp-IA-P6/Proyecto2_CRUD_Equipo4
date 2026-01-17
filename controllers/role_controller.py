@@ -29,7 +29,7 @@ class RoleController:
     
     @staticmethod
     #CREATE ROLE (futura escalabilidad)
-    def create_role(db: Session, role: role_schema.RoleCreate):
+    def create_role(db: Session, role: schema.RoleCreate):
         logger.info(f"Creating role with name={role.name}")
         
         try:
