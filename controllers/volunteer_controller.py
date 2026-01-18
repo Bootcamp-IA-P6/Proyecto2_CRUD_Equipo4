@@ -19,13 +19,13 @@ def create_volunteer(db: Session, data: VolunteerCreate):
         logger.warning(f"User with id {data.user_id} does not exist")
         raise HTTPException(status_code=404, detail=f"User with id {data.user_id} does not exist")
 
-    volunteer = Volunteer(**data.dict())
+    volunteer = Volunteer(**data.dict()) #construcción del objeto ORM
 
     try:
         db.add(volunteer)
         db.commit()
         db.refresh(volunteer)
-        logger.info(f"Volunteer created with id={volunteer.id}")
+        logger.info(f"Volunteer with ID {volunteer.id} created successfully.")
         return volunteer
     except IntegrityError as e:
         db.rollback()
@@ -34,10 +34,13 @@ def create_volunteer(db: Session, data: VolunteerCreate):
 
 
 def get_volunteers(db: Session):
+    logger.info(f"Getting volunteers list")
     return db.query(Volunteer).all()
 
 
 def get_volunteer(db: Session, id: int):
+    logger.info(f"Trying to get volunteer id= {id}")
+
     #print("ID recibido:", id)
     volunteer = db.query(Volunteer).filter(Volunteer.id == id,  Volunteer.deleted_at.is_(None)).first()
     #print("Resultado:", volunteer)
@@ -48,31 +51,37 @@ def get_volunteer(db: Session, id: int):
 
 
 def update_volunteer(db: Session, id: int, data: VolunteerUpdate):
+    logger.info(f"changing the volunteer's status")
     volunteer = get_volunteer(db, id)
+
     if not volunteer:
         raise HTTPException(status_code=404,detail="Volunteer not found")    
     try:
         volunteer.status = data.status
         db.commit()
         db.refresh(volunteer)
-        logger.info(f"updated volunteer: {id} status={volunteer.status}")
+        logger.info(f"updated volunteer: {volunteer.id} status={volunteer.status}")
         return volunteer
     except ValueError as e:
         db.rollback()
-        logger.error(f"Invalid status for volunteer {id}: {e}")
+        logger.error(f"Invalid status for volunteer {volunteer.id}: {e}")
         raise HTTPException(status_code=400, detail="Invalid volunteer data")    
 
 
 def delete_volunteer(db: Session, id: int):
+    logger.info(f"trying to delete the volunteer")
     volunteer = get_volunteer(db, id)
+    
     if not volunteer:
+        logger.warning(f"Volunteer id={id} not found")
         raise HTTPException(status_code=404, detail="Volunteer not found")
     
     if volunteer.deleted_at is not None:
+        logger.warning(f"Volunteer id={id} already deleted at {volunteer.deleted_at}")
         raise HTTPException(status_code=400, detail="Volunteer already deleted")
     
     volunteer.status = VolunteerStatus.suspended
     volunteer.deleted_at = datetime.utcnow()
     db.commit()
-    logger.info(f"Soft-deleted volunteer id={id}, status={volunteer.status}")
+    logger.info(f"Soft-deleted volunteer id={volunteer.id}, status={volunteer.status}")
     return volunteer

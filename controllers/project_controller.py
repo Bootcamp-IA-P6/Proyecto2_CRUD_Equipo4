@@ -24,22 +24,31 @@ class ProjectController:
 
     @staticmethod
     async def get_item(db: Session, item_id: int) -> schema.ProjectOut:
+        logger.info(f"Trying to get project id= {item_id}")
         item = db.query(Project).filter(Project.id == item_id).first()
+
         if not item:
-            logger.warning(f"Project with id {id} does not exist")
-            raise HTTPException(status_code=404, detail="Item not found")
+            logger.warning(f"Project with id {item_id} does not exist")
+            raise HTTPException(status_code=404, detail="Project not found")
         return schema.ProjectOut.model_validate(item) if item else None
 
     @staticmethod
     async def create_item(db: Session, item: schema.ProjectCreate)-> schema.ProjectOut:
-        logger.info(f"Trying to create project for ={id}")
+        logger.info(f"Trying to create project for ={item.name}")
         
+        existing = db.query(Project).filter(Project.name == item.name).first()
+
+        if existing:
+            logger.warning(f"Project {item.name} already exist (id={existing.id})")
+            raise HTTPException(status_code=400, detail="Project already exist")
+
         db_item = Project(**item.dict())
 
         try:
             db.add(db_item)
             db.commit()
             db.refresh(db_item)
+            logger.info(f"Project {item.name} created successfully.")
             return schema.ProjectOut.model_validate(db_item)
         except IntegrityError as e:
             db.rollback()
@@ -50,26 +59,33 @@ class ProjectController:
 
     @staticmethod
     async def update_item(db: Session, item_id: int, item: schema.ProjectCreate) -> schema.ProjectOut:
+        logger.info(f"Trying to update project {item_id}")
         db_item = db.query(Project).filter(Project.id == item_id).first()
-        try: 
-            if db_item:
-                if item.name is not None:
-                    db_item.name = item.name
-                if item.description is not None:
-                    db_item.description = item.description
-                if item.deadline is not None:
-                    db_item.deadline = item.deadline
-                if item.status is not None:
-                    db_item.status = item.status
-                if item.priority is not None:
-                    db_item.priority = item.priority
+
+        if not db_item:
+            logger.info(f"Project with ID {item_id} not found")
+            raise HTTPException(status_code=404, detail="Project no found")
+        
+        try:     
+            if item.name is not None:
+                db_item.name = item.name
+            if item.description is not None:
+                db_item.description = item.description
+            if item.deadline is not None:
+                db_item.deadline = item.deadline
+            if item.status is not None:
+                db_item.status = item.status
+            if item.priority is not None:
+                db_item.priority = item.priority
                 
-                db.commit()
-                db.refresh(db_item)
-                return schema.ProjectOut.model_validate(db_item)
-        except IntegrityError:
+            db.commit()
+            db.refresh(db_item)
+            logger.info(f"updated project: {item_id}")
+            return schema.ProjectOut.model_validate(db_item)
+            
+        except IntegrityError as e:
             db.rollback()
-            logger.error(f"Invalid data: Error updating project")
+            logger.error(f"Invalid data for project: {e}")
             raise HTTPException(status_code=400, detail="Invalid data: Error updating project")
     
 
@@ -77,14 +93,17 @@ class ProjectController:
 
     @staticmethod
     async def delete_item(db: Session, item_id: int):
+        logger.info(f"trying to delete the project")
         db_item = db.query(Project).filter(Project.id == item_id).first()
-        try:
+        
+        if not db_item:
+            logger.warning(f"Project {item_id} not found")
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        project = db_item
+        db.delete(db_item)
+        db.commit()
+        logger.info(f"Deleted volunteer id={item_id}")
+        
+        return project
 
-            if db_item:
-                db.delete(db_item)
-                db.commit()
-            return None
-        except IntegrityError:
-            db.rollback()
-            logger.error(f"Invalid data: Error deleting projects")
-            raise HTTPException(status_code=400, detail="Invalid data: Error deleting project")
