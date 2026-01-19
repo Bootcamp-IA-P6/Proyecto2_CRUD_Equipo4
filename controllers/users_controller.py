@@ -3,7 +3,6 @@ from sqlalchemy.exc import IntegrityError
 
 from fastapi import HTTPException
 from datetime import datetime
-import logging
 
 from models.users_model import User
 from schemas import users_schema
