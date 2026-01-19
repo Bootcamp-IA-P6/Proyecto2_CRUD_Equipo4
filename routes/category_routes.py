@@ -23,21 +23,12 @@ def list_all(db: Session = Depends(get_db)):
 
 @router.get("/{id}", response_model=CategoryOut)
 def get_one(id: int, db: Session = Depends(get_db)):
-    category = get_category(db, id)
-    if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
-    return category
+    return get_category(db, id) 
 
 @router.put("/{id}", response_model=CategoryOut)
 def update(id: int, data: CategoryCreate, db: Session = Depends(get_db)):
-    category = update_category(db, id, data)
-    if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
-    return category
+    return update_category(db, id, data)
 
 @router.delete("/{id}", response_model=CategoryOut)
 def delete(id: int, db: Session = Depends(get_db)):
-    category = delete_category(db, id)
-    if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
-    return category
+    return delete_category(db, id)

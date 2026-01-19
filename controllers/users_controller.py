@@ -4,10 +4,11 @@ from schemas import users_schema as schema
 from fastapi import HTTPException
 from utils.security import hash_password
 from datetime import datetime
-import logging
+from config.logging_config import get_logger
 
 
-logger = logging.getLogger("app.users")
+
+logger = get_logger("users")
 
 
 class UserController:

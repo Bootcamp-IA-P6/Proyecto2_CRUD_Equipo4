@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict
-#from enum import Enum
 from datetime import datetime
 from domain.volunteer_enum import VolunteerStatus
+from typing import Optional
 
 class VolunteerBase(BaseModel):
     user_id: int
@@ -18,8 +18,9 @@ class VolunteerUpdate(BaseModel):
 
 class VolunteerOut(VolunteerBase):
     id: int
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
+    deleted_at : Optional[datetime]
 
 
     model_config = ConfigDict(from_attributes=True)

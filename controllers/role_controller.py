@@ -2,9 +2,10 @@ from sqlalchemy.orm import Session
 from models.role_model import Role
 from schemas import role_schema as schema
 from fastapi import HTTPException
-import logging
+from config.logging_config import get_logger
 
-logger = logging.getLogger("app.roles")
+
+logger = get_logger("roles")
 
 
 class RoleController:
@@ -28,7 +29,7 @@ class RoleController:
     
     @staticmethod
     #CREATE ROLE (futura escalabilidad)
-    def create_role(db: Session, role: role_schema.RoleCreate):
+    def create_role(db: Session, role: schema.RoleCreate):
         logger.info(f"Creating role with name={role.name}")
         
         try:
