@@ -1,7 +1,9 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from domain.volunteer_enum import VolunteerStatus
-from typing import Optional
+from typing import Optional, List
+from schemas.skills_schema import SkillBase
+
 
 class VolunteerBase(BaseModel):
     user_id: int
@@ -25,3 +27,5 @@ class VolunteerOut(VolunteerBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+class VolunteerWithSkills(VolunteerOut):
+    skills: List[SkillBase] = []

@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from models.volunteers_model import Volunteer
 from models.users_model import User
+from models.skill_model import Skill
 from schemas.volunteer_schema import VolunteerCreate, VolunteerUpdate
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
@@ -84,4 +85,32 @@ def delete_volunteer(db: Session, id: int):
     volunteer.deleted_at = datetime.utcnow()
     db.commit()
     logger.info(f"Soft-deleted volunteer id={volunteer.id}, status={volunteer.status}")
+    return volunteer
+
+####
+
+def get_volunteer_with_skills(db: Session, id: int):
+    volunteer = (db.query(Volunteer).options(joinedload(Volunteer.skills)).filter(Volunteer.id == id).first())
+    
+    if not volunteer:
+        logger.warning(f"Volunteer with id {id} not found")
+        raise HTTPException(404, "Volunteer not found")
+    return volunteer
+
+
+def add_skill_to_volunteer(db: Session, volunteer_id: int, skill_id: int):
+    volunteer = get_volunteer(db, volunteer_id)
+    skill = db.query(Skill).filter(Skill.id == skill_id).first()
+    
+    if not skill:
+        logger.warning(f"Skill with id {skill_id} not found")
+        raise HTTPException(400, "Invalid skill_id")
+    
+    if skill in volunteer.skills:
+        logger.warning(f"Volunteer already has this skill")
+        raise HTTPException(409, "Volunteer already has this skill")
+    
+    volunteer.skills.append(skill)
+    db.commit()
+    logger.info(f"Skill added to the volunteer")
     return volunteer
