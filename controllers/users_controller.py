@@ -8,8 +8,10 @@ import logging
 from models.users_model import User
 from schemas import users_schema
 from utils.security import hash_password
+from config.logging_config import get_logger
 
-logger = logging.getLogger("app.users")
+
+logger = get_logger("users")
 
 
 class UserController:
