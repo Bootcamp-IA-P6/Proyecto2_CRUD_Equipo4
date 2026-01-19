@@ -25,7 +25,7 @@ class ProjectController:
     @staticmethod
     async def get_item(db: Session, item_id: int) -> schema.ProjectOut:
         logger.info(f"Trying to get project id= {item_id}")
-        item = db.query(Project).filter(Project.id == item_id).first()
+        item = db.query(Project).filter(Project.id == item_id, Project.deleted_at.is_(None)).first()
 
         if not item:
             logger.warning(f"Project with id {item_id} does not exist")
