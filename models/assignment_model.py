@@ -1,28 +1,31 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 
 from database.database import Base
-import enum
 from domain.assignment_enum import AssignmentStatus
-
 
 
 class Assignment(Base):
     __tablename__ = 'assignments'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    project_skill_id = Column(
-        Integer,
+    id: Mapped[int] = mapped_column(
+        Integer, 
+        primary_key=True, 
+        utoincrement=True
+        )
+    project_skill_id: Mapped[int] = mapped_column(
         ForeignKey('project_skills.id'),
         nullable=False
     )
-    volunteer_skill_id = Column(
-        Integer,
+    volunteer_skill_id: Mapped[int] = mapped_column(
         ForeignKey('volunteer_skills.id'),
         nullable=False
     )
-    status = Column(Enum(AssignmentStatus), default = AssignmentStatus.pending, nullable=False)
+    status: Mapped[AssignmentStatus] = mapped_column(
+        Enum(AssignmentStatus), 
+        default = AssignmentStatus.PENDING, 
+        nullable=False)
     
     # Relationships
     project_skill = relationship('ProjectSkill', back_populates='assignments')
