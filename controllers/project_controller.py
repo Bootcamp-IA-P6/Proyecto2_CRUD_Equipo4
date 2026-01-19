@@ -25,7 +25,7 @@ class ProjectController:
     @staticmethod
     async def get_item(db: Session, item_id: int) -> schema.ProjectOut:
         logger.info(f"Trying to get project id= {item_id}")
-        item = db.query(Project).filter(Project.id == item_id).first()
+        item = db.query(Project).filter(Project.id == item_id, Project.deleted_at.is_(None)).first()
 
         if not item:
             logger.warning(f"Project with id {item_id} does not exist")
@@ -91,19 +91,24 @@ class ProjectController:
 
 
 
-    @staticmethod
+     @staticmethod
     async def delete_item(db: Session, item_id: int):
         logger.info(f"trying to delete the project")
-        db_item = db.query(Project).filter(Project.id == item_id).first()
+        project = db.query(Project).filter(Project.id == item_id).first()
         
-        if not db_item:
+        if not project:
             logger.warning(f"Project {item_id} not found")
             raise HTTPException(status_code=404, detail="Project not found")
+
+        if project.deleted_at is not None:
+        logger.warning(f"Volunteer id={id} already deleted at {volunteer.deleted_at}")
+        raise HTTPException(status_code=400, detail="Volunteer already deleted")
         
-        project = db_item
-        db.delete(db_item)
+        
+        project.deleted_at = datetime.utcnow()
         db.commit()
-        logger.info(f"Deleted volunteer id={item_id}")
+        logger.info(f"Soft-deleted project id={project.id}")
+        
         
         return project
 
