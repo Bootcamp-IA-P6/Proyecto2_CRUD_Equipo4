@@ -10,4 +10,5 @@ class Skill(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(100), unique=True)
 
-    volunteers = relationship("Volunteer", secondary= volunteer_skills, back_populates="skills")    
+    volunteers = relationship("Volunteer", secondary= volunteer_skills, back_populates="skills") 
+    projects = relationship("Project", secondary=project_skills, back_populates="skills")   

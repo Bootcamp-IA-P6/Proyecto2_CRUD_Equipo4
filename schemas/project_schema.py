@@ -34,3 +34,13 @@ class ProjectOut(ProjectBase):
     category: Optional[CategoryOut] = None
     
     model_config = ConfigDict(from_attributes=True)
+
+
+# operaciones de añadir o eliminar multiples skills
+class ProjectSkillsOperation(BaseModel):
+    project_id: int
+    skill_ids: List[int]
+
+class ProjectSkillsOut(ProjectBase):
+    project_id: int
+    skills: List[dict]  # Lista objetos Skill

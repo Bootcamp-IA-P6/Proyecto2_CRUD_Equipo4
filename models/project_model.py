@@ -23,3 +23,5 @@ class Project(Base):
 
     category = relationship("Category")
 
+    skills = relationship("Skill", secondary=project_skills, back_populates="projects")
+
