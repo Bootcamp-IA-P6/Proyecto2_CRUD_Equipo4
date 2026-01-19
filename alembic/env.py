@@ -17,7 +17,7 @@ from database.database import Base, engine
 from models.users_model import User
 from models.volunteers_model import Volunteer
 from models.skill_model import Skill
-from models.volunteer_skill_model import VolunteerSkill
+from models.volunteer_skill_model import volunteer_skills
 from models.project_model import Project
 from models.category_model import Category
 from models.role_model import Role

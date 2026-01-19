@@ -1,9 +1,9 @@
-from sqlalchemy import Column, Integer, ForeignKey
+from sqlalchemy import Table, Column, Integer, ForeignKey
 from database.database import Base
 
-class VolunteerSkill(Base):
-    __tablename__ = "volunteers_skills"
-
-    id = Column(Integer, primary_key=True)
-    volunteer_id = Column(Integer, ForeignKey("volunteers.id"), nullable=False)
-    skill_id = Column(Integer, ForeignKey("skills.id"), nullable=False)
+volunteer_skills = Table(
+    "volunteer_skills",
+    Base.metadata,
+    Column("volunteer_id", ForeignKey("volunteers.id"), primary_key=True),
+    Column("skill_id", ForeignKey("skills.id"), primary_key=True),
+)

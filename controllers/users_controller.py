@@ -122,20 +122,20 @@ class UserController:
             if user.birth_date is not None:
                 db_user.birth_date = user.birth_date
         
-        db.commit()
-        db.refresh(db_user)
+            db.commit()
+            db.refresh(db_user)
+            
+            logger.info(f"User with id={user_id} updated")
+            return users_schema.UserOut.model_validate(db_user)
         
-        logger.info(f"User with id={user_id} updated")
-        return users_schema.UserOut.model_validate(db_user)
-    
-    except HTTPException:
-        db.rollback()
-        raise
-    
-    except Exception as e:
-        db.rollback()
-        logger.exception(f"Error updating user with id={user_id}: {e}")
-        raise HTTPException(status_code=500, detail="Error updating user")
+        except HTTPException:
+            db.rollback()
+            raise
+        
+        except Exception as e:
+            db.rollback()
+            logger.exception(f"Error updating user with id={user_id}: {e}")
+            raise HTTPException(status_code=500, detail="Error updating user")
     
     @staticmethod
     #DELETE USER
