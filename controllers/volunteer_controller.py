@@ -51,7 +51,7 @@ def get_volunteers(db: Session):
 
 #Get Volunteer by ID
 def get_volunteer(db: Session, id: int):
-    logger.info(f"Trying to get volunteer id= {id}")
+    logger.info(f"Trying to get volunteer {id}")
 
     volunteer = db.query(Volunteer).filter(Volunteer.id == id, Volunteer.deleted_at.is_(None)).first()
 
@@ -65,14 +65,11 @@ def update_volunteer(db: Session, id: int, data: VolunteerUpdate):
     logger.info(f"Changing the volunteer's status")
     volunteer = get_volunteer(db, id)
 
-    if not volunteer:
-        logger.warning(f"Volunteer with ID {id} not found")
-        raise HTTPException(status_code=404, detail="Volunteer not found")   #Not found 
     try:
         volunteer.status = data.status
         db.commit()
         db.refresh(volunteer)
-        logger.info(f"updated volunteer: {volunteer.id} status={volunteer.status}")
+        logger.info(f"Updated volunteer {volunteer.id} to {volunteer.status}")
         return volunteer
     
     except ValueError as e:
@@ -82,12 +79,8 @@ def update_volunteer(db: Session, id: int, data: VolunteerUpdate):
 
 #Delete Volunteer
 def delete_volunteer(db: Session, id: int):
-    logger.info(f"trying to delete the volunteer")
+    logger.info(f"Trying to delete the volunteer")
     volunteer = get_volunteer(db, id)
-    
-    if not volunteer:
-        logger.warning(f"Volunteer with ID {id} not found")
-        raise HTTPException(status_code=404, detail="Volunteer not found")  #Not found
     
     if volunteer.deleted_at is not None:
         logger.warning(f"Volunteer with ID {id} already deleted at {volunteer.deleted_at}")
@@ -103,13 +96,7 @@ def delete_volunteer(db: Session, id: int):
 
 #Get Volunteer
 def get_volunteer_with_skills(db: Session, volunteer_id: int):
-    #Get Volunteer
-    logger.info(f"Trying to get volunteer")
-    volunteer = db.query(Volunteer).filter(Volunteer.id == volunteer_id).first()
-
-    if not volunteer:
-        logger.warning(f"Volunteer with id {volunteer_id} not found")
-        raise HTTPException(404, "Volunteer not found")    #Not found
+    volunteer = get_volunteer(db, volunteer_id)     #Get Volunteer
 
     #Get active skills using join 
     stmt = (select(Skill).select_from(
@@ -125,8 +112,8 @@ def get_volunteer_with_skills(db: Session, volunteer_id: int):
 
 #Add Skill to Volunteer
 def add_skill_to_volunteer(db: Session, volunteer_id: int, skill_id: int):
-    logger.info(f"Adding skill to volunteer")
     volunteer = get_volunteer(db, volunteer_id)
+    logger.info(f"Adding skill to volunteer")
     skill = db.query(Skill).filter(Skill.id == skill_id).first()
     
     if not skill:
@@ -139,6 +126,7 @@ def add_skill_to_volunteer(db: Session, volunteer_id: int, skill_id: int):
     
     volunteer.skills.append(skill)
     db.commit()
+    db.refresh(volunteer)
     logger.info(f"Skill successfully added to the volunteer")
     return volunteer
 

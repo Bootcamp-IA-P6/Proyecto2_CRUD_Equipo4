@@ -40,7 +40,7 @@ def delete(id: int, db: Session = Depends(get_db)):
 def get_volunteer_skills(id: int, db: Session = Depends(get_db)):
     return get_volunteer_with_skills(db, id)
 
-@router.post("/{volunteer_id}/skills/{skill_id}", status_code=201)
+@router.post("/{volunteer_id}/skills/{skill_id}", response_model=VolunteerWithSkills)
 def add_skill(volunteer_id: int, skill_id: int, db: Session = Depends(get_db)):
     return add_skill_to_volunteer(db, volunteer_id, skill_id)
 
