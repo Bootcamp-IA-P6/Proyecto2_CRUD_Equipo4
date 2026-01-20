@@ -74,7 +74,7 @@ class UserController:
             logger.info(f"User with id={db_user.id} created")
             return users_schema.UserOut.model_validate(db_user)
         
-        except IntegrityError:
+        except IntegrityError as e:
             db.rollback()
             logger.exception(f"Error creating user: {e}")
             raise HTTPException(status_code=400, detail="Email already exists")

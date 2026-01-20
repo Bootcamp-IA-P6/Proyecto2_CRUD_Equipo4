@@ -2,12 +2,15 @@ from sqlalchemy.orm import Session
 from models.volunteers_model import Volunteer
 from models.users_model import User
 from models.skill_model import Skill
+from models.volunteer_skill_model import volunteer_skills
 from schemas.volunteer_schema import VolunteerCreate, VolunteerUpdate
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from datetime import datetime
 from domain.volunteer_enum import VolunteerStatus
 from config.logging_config import get_logger
+from sqlalchemy import select, update, join, and_
+
 
 logger = get_logger("volunteers")
 
@@ -89,12 +92,28 @@ def delete_volunteer(db: Session, id: int):
 
 ####
 
-def get_volunteer_with_skills(db: Session, id: int):
-    volunteer = (db.query(Volunteer).options(joinedload(Volunteer.skills)).filter(Volunteer.id == id).first())
-    
+def get_volunteer_with_skills(db: Session, volunteer_id: int):
+    # Traer el volunteer
+    volunteer = db.query(Volunteer).filter(Volunteer.id == volunteer_id).first()
     if not volunteer:
-        logger.warning(f"Volunteer with id {id} not found")
+        logger.warning(f"Volunteer with id {volunteer_id} not found")
         raise HTTPException(404, "Volunteer not found")
+
+    # Traer skills activas usando join con tabla intermedia
+    stmt = (
+        select(Skill)
+        .select_from(
+            join(Skill, volunteer_skills, Skill.id == volunteer_skills.c.skill_id)
+        )
+        .where(
+            volunteer_skills.c.volunteer_id == volunteer_id,
+            volunteer_skills.c.deleted_at.is_(None)
+        )
+    )
+    skills = db.execute(stmt).scalars().all()
+
+    # Asignar skills manualmente para usar en el schema
+    volunteer.skills = skills
     return volunteer
 
 
@@ -114,3 +133,41 @@ def add_skill_to_volunteer(db: Session, volunteer_id: int, skill_id: int):
     db.commit()
     logger.info(f"Skill added to the volunteer")
     return volunteer
+
+def remove_skill_from_volunteer(db: Session, volunteer_id: int, skill_id: int):
+    logger.info(f"Removing skill {skill_id} from volunteer {volunteer_id}")
+
+    stmt = select(volunteer_skills).where(
+    volunteer_skills.c.volunteer_id == volunteer_id,
+    volunteer_skills.c.skill_id == skill_id)
+
+    skill = db.execute(stmt).first()
+
+    #skill = db.query(volunteer_skills).filter(volunteer_skills.volunteer_id == volunteer_id, volunteer_skills.skill_id, volunteer_skills.deleted_at.is_(None)).first()
+
+    if not skill:
+        logger.warning(f"VolunteerSkill not found for volunteer_id={volunteer_id} and skill_id={skill_id}")
+        raise HTTPException(status_code=404, detail="Skill not assigned to volunteer")
+    
+    upd = (
+        update(volunteer_skills)
+        .where(
+            and_(
+            volunteer_skills.c.volunteer_id == volunteer_id,
+            volunteer_skills.c.skill_id == skill_id,
+            volunteer_skills.c.deleted_at.is_(None)
+            )
+        )
+        .values(deleted_at=datetime.utcnow())
+    )
+    
+    try:
+        db.execute(upd)
+        db.commit()
+        logger.info(f"Skill {skill_id} soft-deleted for volunteer {volunteer_id}")
+        return skill
+    
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error removing skill: {e}")
+        raise HTTPException(status_code=500, detail="Error removing skill")
