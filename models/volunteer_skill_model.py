@@ -1,9 +1,13 @@
-from sqlalchemy import Table, Column, Integer, ForeignKey
+from sqlalchemy import Table, Column, Integer, ForeignKey, DateTime
 from database.database import Base
+
 
 volunteer_skills = Table(
     "volunteer_skills",
     Base.metadata,
-    Column("volunteer_id", ForeignKey("volunteers.id"), primary_key=True),
-    Column("skill_id", ForeignKey("skills.id"), primary_key=True),
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("volunteer_id", ForeignKey("volunteers.id"), nullable=False),
+    Column("skill_id", ForeignKey("skills.id"), nullable=False),
+    Column("deleted_at", DateTime, nullable=True),
+
 )
