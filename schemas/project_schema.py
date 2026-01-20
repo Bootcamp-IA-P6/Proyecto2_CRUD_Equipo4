@@ -1,8 +1,9 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
 from domain.projects_enums import Project_status, Project_priority
 from schemas.category_schemas import CategoryOut
+from schemas.skills_schema import SkillOut
 
 
 class ProjectBase(BaseModel):
@@ -34,3 +35,13 @@ class ProjectOut(ProjectBase):
     category: Optional[CategoryOut] = None
     
     model_config = ConfigDict(from_attributes=True)
+
+
+# operaciones de añadir o eliminar multiples skills
+class ProjectSkillsOperation(BaseModel):
+    project_id: int
+    skill_ids: List[int]
+
+class ProjectSkillsOut(ProjectOut):
+    
+    skills: List[SkillOut]  # Lista objetos Skill

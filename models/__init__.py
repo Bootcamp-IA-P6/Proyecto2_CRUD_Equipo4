@@ -5,3 +5,4 @@ from models.volunteer_skill_model import volunteer_skills
 from models.project_model import Project
 #from models.assignment_model import Assignment
 from .category_model import Category
+from models.project_skill_model import project_skills
