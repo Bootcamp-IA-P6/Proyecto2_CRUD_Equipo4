@@ -56,3 +56,8 @@ async def add_skill(id: int, skill_id: int, db: Session = Depends(get_db)):
 @project_router.delete("/{id}/skills/{skill_id}")
 async def remove_skill(id: int, skill_id: int, db: Session = Depends(get_db)):
     return await ProjectController.remove_skill_from_project(db, id, skill_id)
+
+#DELETE ALL SKILLS FROM PROJECT
+@project_router.delete("/{id}/skills", response_model=project_schema.ProjectSkillsOut)
+async def remove_all_skills(id: int, db: Session = Depends(get_db)):
+    return await ProjectController.remove_all_skills_from_project(db, id)
