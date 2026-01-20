@@ -1,8 +1,8 @@
-"""Add project_skills intermediate table
+"""Add project skills table
 
-Revision ID: 6c210b9fa5e4
-Revises: 3b6ddfa65ef2
-Create Date: 2026-01-19 21:31:12.371428
+Revision ID: 533cd9a13786
+Revises: 642b89b5a17f
+Create Date: 2026-01-20 11:17:34.029434
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '6c210b9fa5e4'
-down_revision: Union[str, Sequence[str], None] = '3b6ddfa65ef2'
+revision: str = '533cd9a13786'
+down_revision: Union[str, Sequence[str], None] = '642b89b5a17f'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
