@@ -19,6 +19,7 @@ from models.volunteers_model import Volunteer
 from models.skill_model import Skill
 from models.volunteer_skill_model import volunteer_skills
 from models.project_model import Project
+from models.project_skill_model import project_skills
 from models.category_model import Category
 from models.role_model import Role
 

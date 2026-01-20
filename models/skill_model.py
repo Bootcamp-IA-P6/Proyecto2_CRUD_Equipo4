@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String
 from database.database import Base
 from sqlalchemy.orm import relationship
 from models.volunteer_skill_model import volunteer_skills
+from models.project_skill_model import project_skills
 
 
 class Skill(Base):

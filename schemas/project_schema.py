@@ -1,8 +1,9 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
 from domain.projects_enums import Project_status, Project_priority
 from schemas.category_schemas import CategoryOut
+from schemas.skills_schema import SkillOut
 
 
 class ProjectBase(BaseModel):
@@ -41,6 +42,6 @@ class ProjectSkillsOperation(BaseModel):
     project_id: int
     skill_ids: List[int]
 
-class ProjectSkillsOut(ProjectBase):
-    project_id: int
-    skills: List[dict]  # Lista objetos Skill
+class ProjectSkillsOut(ProjectOut):
+    
+    skills: List[SkillOut]  # Lista objetos Skill

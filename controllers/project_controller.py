@@ -3,6 +3,9 @@ import datetime
 from sqlalchemy.orm import Session
 from schemas import project_schema as schema
 from models.project_model import Project
+from models.project_skill_model import project_skills
+from models.skill_model import Skill
+from controllers.skill_controller import get_skill
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from config.logging_config import get_logger
@@ -111,4 +114,60 @@ class ProjectController:
         
         
         return schema.ProjectOut.model_validate(project)
+
+    #PROJECT+SKILLS
+
+    #add skill
+    @staticmethod
+    async def add_skill_to_project(db: Session, project_id: int, skill_id: int):
+        project = db.query(Project).filter(Project.id == project_id, Project.deleted_at.is_(None)).first()
+        if not project:
+            logger.warning(f"Project with id {item_id} does not exist")
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        skill = get_skill(db, skill_id)
+
+
+        if skill in project.skills:
+            logger.warning(f"project already has this skill")
+            raise HTTPException(409, "project already has this skill")
+        
+        project.skills.append(skill)
+        db.commit()
+        logger.info(f"Skill added to project")
+        return schema.ProjectSkillsOut.model_validate(project)
+
+    #read project+skill
+    @staticmethod
+    async def get_project_with_skills(db: Session, project_id: int):
+    
+        project = db.query(Project).filter(Project.id == project_id, Project.deleted_at.is_(None)).first()
+        
+        
+        skills = db.query(Skill).join(project_skills).filter(
+            project_skills.c.project_id == project_id,
+            Skill.deleted_at.is_(None)
+        ).all()
+        
+        
+        project.skills = skills
+        return schema.ProjectSkillsOut.model_validate(project)
+
+    #remove one skill
+    @staticmethod
+    async def remove_skill_from_project(db: Session, project_id: int, skill_id: int):
+        project = db.query(Project).filter(Project.id == project_id, Project.deleted_at.is_(None)).first()
+        skill = get_skill(db, skill_id)
+        
+        if skill not in project.skills:
+            logger.warning(f"Skill {skill_id} not in project {project_id}")
+            raise HTTPException(404, "Skill not assigned to project")
+        
+        project.skills.remove(skill)
+        db.commit()
+        
+        logger.info(f"Skill {skill_id} removed from project {project_id}")
+        
+        return schema.ProjectSkillsOut.model_validate(project)
+
 
