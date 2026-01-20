@@ -142,7 +142,9 @@ class ProjectController:
     async def get_project_with_skills(db: Session, project_id: int):
     
         project = db.query(Project).filter(Project.id == project_id, Project.deleted_at.is_(None)).first()
-        
+        if not project:
+            logger.warning(f"Project with id {item_id} does not exist")
+            raise HTTPException(status_code=404, detail="Project not found")
         
         skills = db.query(Skill).join(project_skills).filter(
             project_skills.c.project_id == project_id,
@@ -157,6 +159,10 @@ class ProjectController:
     @staticmethod
     async def remove_skill_from_project(db: Session, project_id: int, skill_id: int):
         project = db.query(Project).filter(Project.id == project_id, Project.deleted_at.is_(None)).first()
+        if not project:
+            logger.warning(f"Project with id {item_id} does not exist")
+            raise HTTPException(status_code=404, detail="Project not found")
+            
         skill = get_skill(db, skill_id)
         
         if skill not in project.skills:
