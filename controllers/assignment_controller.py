@@ -5,10 +5,10 @@ from datetime import datetime
 
 
 from models.assignment_model import Assignment
-from models.project_skill_model import ProjectSkill
+from models.project_skill_model import project_skills 
 from models.volunteer_skill_model import volunteer_skills
 from models.project_model import Project
-from domain.projects_enums import ProjectStatus
+from domain.projects_enums import Project_status as ProjectStatus
 from schemas import assignment_schema
 from domain.assignment_enum import AssignmentStatus
 from config.logging_config import get_logger
@@ -32,9 +32,10 @@ class AssignmentController:
         
         try:
             #Validar project skill
-            project_skill = db.query(ProjectSkill).filter(
-                ProjectSkill.id == data.project_skill_id,
-                ProjectSkill.deleted_at.is_(None)
+            project_skill = db.execute(
+                project_skills.select().where(
+                    project_skills.c.id == data.project_skill_id
+                )
             ).first()
             
             if not project_skill:
@@ -73,8 +74,8 @@ class AssignmentController:
                 Assignment.volunteer_skill_id == data.volunteer_skill_id,
                 Assignment.deleted_at.is_(None),
                 Assignment.status.in_([
-                    AssignmentStatus.pending,
-                    AssignmentStatus.accepted
+                    AssignmentStatus.PENDING,
+                    AssignmentStatus.ACCEPTED
                 ])
             ).first()
             
@@ -89,7 +90,7 @@ class AssignmentController:
             assignment = Assignment(
                 project_skill_id=data.project_skill_id,
                 volunteer_skill_id=data.volunteer_skill_id,
-                status = AssignmentStatus.pending
+                status = AssignmentStatus.PENDING
             )
             db.add(assignment)
             db.commit()
@@ -145,7 +146,7 @@ class AssignmentController:
                 )
                 
             #validar transiciones de estado
-            if assignment.status == AssignmentStatus.completed:
+            if assignment.status == AssignmentStatus.COMPLETED:
                 logger.warning("Attempt to modify completed assignment")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST, 
@@ -157,9 +158,10 @@ class AssignmentController:
             assignment.status = new_status
             
             #actualizar estado del proyecto basado en el cambio
-            project_skill = db.query(ProjectSkill).filter(
-                ProjectSkill.id == assignment.project_skill_id,
-                ProjectSkill.deleted_at.is_(None)
+            project_skill = db.execute(
+                project_skills.select().where(
+                    project_skills.c.id == assignment.project_skill_id
+                )
             ).first()
             
             if project_skill:
@@ -170,18 +172,44 @@ class AssignmentController:
                 
                 if project:
                     #si la asignacion fue aceptada, maracar proyecto como 'assigned'
-                    if new_status == AssignmentStatus.accepted and old_status != AssignmentStatus.accepted:
+                    if new_status == AssignmentStatus.ACCEPTED and old_status != AssignmentStatus.ACCEPTED:
                         project.status = ProjectStatus.assigned
                         logger.info(f"Project {project.id} status updated to assigned")
+                    
+                    elif new_status == AssignmentStatus.REJECTED:
+                        active_assignments = db.query(Assignment).join(
+                            project_skills, 
+                            Assignment.project_skill_id == project_skills.c.id
+                        ).filter(
+                            project_skills.c.project_id == project.id,
+                            project_skills.c.deleted_at.is_(None),
+                            Assignment.deleted_at.is_(None),
+                            Assignment.status != AssignmentStatus.REJECTED
+                        ).count()
+                        
+                        if active_assignments == 0:
+                            project.status = ProjectStatus.pending
+                            logger.info(f"Project {project.id} status updated to pending")
                         
                     #si todas las asignaciones estan completadas, marcar proyecto como 'completed'
-                    if new_status == AssignmentStatus.completed:
-                        # Verificar si hay asignaciones NO completadas para este proyecto
-                        incomplete_assignments= db.query(Assignment).join(ProjectSkill).filter(
-                            ProjectSkill.project_id == project.id,
+                    elif new_status == AssignmentStatus.COMPLETED:
+                        #obtener todos los skills del proyecto
+                        project_skill_rows = db.execute(
+                            project_skills.select().where(
+                                project_skills.c.project_id == project.id,
+                                project_skills.c.deleted_at.is_(None)
+                            )
+                        ).fetchall()
+                        
+                        incomplete_assignments = db.query(Assignment).join(
+                            project_skills, 
+                            Assignment.project_skill_id == project_skills.c.id
+                        ).filter(
+                            project_skills.c.project_id == project.id,
+                            project_skills.c.deleted_at.is_(None),
                             Assignment.deleted_at.is_(None),
-                            Assignment.status == AssignmentStatus.completed
-                        ).count() 
+                            Assignment.status != AssignmentStatus.COMPLETED
+                        ).count()
                         
                         if incomplete_assignments == 0:
                             project.status = ProjectStatus.completed
@@ -205,7 +233,7 @@ class AssignmentController:
                 detail="Database integrity error updating assignment status"
                 )
             
-        except HTTPException as e:
+        except Exception as e:
             db.rollback()
             logger.exception(f"Error updating assignment status: {e}")
             raise HTTPException(
@@ -246,40 +274,71 @@ class AssignmentController:
                 detail="Error retrieving assignments"
             )
     
-    
     @staticmethod
-    def delete_assignment(db: Session, assignment_id: int):
-        """Elimina una asignación (soft delete)"""
-        logger.info(f"Deleting assignment {assignment_id}")
+    def get_assignments_by_project(db: Session, project_id: int):
+        """Obtiene todas las asignaciones de un proyecto"""
+        logger.info(f"Getting assignments for project {project_id}")
         
         try:
-            assignment = db.query(Assignment).filter(
-                Assignment.id == assignment_id,
-                Assignment.deleted_at.is_(None)
-            ).first()
-            
-            if not assignment:
-                logger.warning(f"Assignment with id={assignment_id} not found")
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Assignment not found"
+            # Buscar project_skill_ids del proyecto
+            project_skill_ids = db.execute(
+                project_skills.select().where(
+                    project_skills.c.project_id == project_id
                 )
+            ).fetchall()
             
-            # Soft delete
-            assignment.deleted_at = datetime.utcnow()
-            db.commit()
+            project_skill_ids_list = [ps.id for ps in project_skill_ids]
             
-            logger.info(f"Assignment {assignment_id} deleted successfully")
-            return {"message": "Assignment deleted successfully"}
-        
-        except HTTPException:
-            db.rollback()
-            raise
+            if not project_skill_ids_list:
+                return []
+            
+            assignments = db.query(Assignment).filter(
+                Assignment.project_skill_id.in_(project_skill_ids_list),
+                Assignment.deleted_at.is_(None)
+            ).all()
+            
+            return assignments
         
         except Exception as e:
-            db.rollback()
-            logger.exception(f"Error deleting assignment {assignment_id}: {str(e)}")
+            logger.exception(f"Error getting assignments for project {project_id}: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error deleting assignment"
+                detail="Error retrieving assignments"
             )
+    
+    # @staticmethod
+    # def delete_assignment(db: Session, assignment_id: int):
+    #     """Elimina una asignación (soft delete)"""
+    #     logger.info(f"Deleting assignment {assignment_id}")
+        
+    #     try:
+    #         assignment = db.query(Assignment).filter(
+    #             Assignment.id == assignment_id,
+    #             Assignment.deleted_at.is_(None)
+    #         ).first()
+            
+    #         if not assignment:
+    #             logger.warning(f"Assignment with id={assignment_id} not found")
+    #             raise HTTPException(
+    #                 status_code=status.HTTP_404_NOT_FOUND,
+    #                 detail="Assignment not found"
+    #             )
+            
+    #         # Soft delete
+    #         assignment.deleted_at = datetime.utcnow()
+    #         db.commit()
+            
+    #         logger.info(f"Assignment {assignment_id} deleted successfully")
+    #         return {"message": "Assignment deleted successfully"}
+        
+    #     except HTTPException:
+    #         db.rollback()
+    #         raise
+        
+    #     except Exception as e:
+    #         db.rollback()
+    #         logger.exception(f"Error deleting assignment {assignment_id}: {str(e)}")
+    #         raise HTTPException(
+    #             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #             detail="Error deleting assignment"
+    #         )

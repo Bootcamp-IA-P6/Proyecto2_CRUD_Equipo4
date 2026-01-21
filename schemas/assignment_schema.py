@@ -7,7 +7,7 @@ from typing import Optional
 class AssignmentBase(BaseModel):
     project_skill_id: int
     volunteer_skill_id: int
-    status: AssignmentStatus = AssignmentStatus.pending
+    status: AssignmentStatus = AssignmentStatus.PENDING
 
 class AssignmentCreate(AssignmentBase):
     pass
