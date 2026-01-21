@@ -23,7 +23,7 @@ def create_volunteer(db: Session, data: VolunteerCreate):
     user = db.query(User).filter(User.id == data.user_id).first()
     if not user:
         logger.warning(f"User with ID {data.user_id} not found")
-        raise HTTPException(status_code=404, detail=f"User with ID {data.user_id} not found")
+        raise HTTPException(status_code=404, detail=f"User with ID {data.user_id} not found")   #Not found
 
     volunteer = Volunteer(**data.dict()) #ORM
 
@@ -42,7 +42,7 @@ def create_volunteer(db: Session, data: VolunteerCreate):
     except Exception as e:
         db.rollback()
         logger.exception("Unexpected error creating volunteer")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error")    #Internal server Error
 
 #Get all Volunteers
 def get_volunteers(db: Session):
@@ -57,7 +57,7 @@ def get_volunteer(db: Session, id: int):
 
     if not volunteer:
         logger.warning(f"Volunteer with ID {id} not found")
-        raise HTTPException(status_code=404, detail="Volunteer not found")
+        raise HTTPException(status_code=404, detail="Volunteer not found")  #Not found
     return volunteer
 
 #Update Volunteer
