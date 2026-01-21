@@ -6,8 +6,31 @@ from config.logging_config import get_logger
 
 
 logger = get_logger("app")
+
 #print("MODELOS REGISTRADOS:", Base.metadata.tables.keys())
-app = FastAPI()
+app = FastAPI(
+    title="🚀 Volunteers system CRUD API",
+    description="""
+    API para gestión completa de sistema de voluntarios.
+    
+    ## 🎯 Características principales:
+    - ✅ Gestión de usuarios y voluntarios
+    - ✅ Administración de proyectos y categorías  
+    - ✅ Sistema de habilidades y asignaciones a proyectos
+    - ✅ Autenticación y seguridad
+  
+    """,
+    version="1.0",
+    contact={
+        "name": "Equipo 4 IA School P6",
+    },
+    docs_url="/docs",  # Swagger UI
+    redoc_url="/redoc",  # ReDoc
+    openapi_url="/openapi.json",  # OpenAPI spec
+    
+    
+)
+
 #print(Base.metadata.tables.keys())
 #Base.metadata.create_all(bind=engine)
 
