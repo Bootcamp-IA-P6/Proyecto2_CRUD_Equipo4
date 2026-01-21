@@ -22,6 +22,8 @@ from models.project_model import Project
 from models.project_skill_model import project_skills
 from models.category_model import Category
 from models.role_model import Role
+from models.assignment_model import Assignment
+
 
 
 # metadata de todos los modelos
