@@ -94,7 +94,7 @@ def delete_volunteer(db: Session, id: int):
 
 def get_volunteer_with_skills(db: Session, volunteer_id: int):
     # Traer el volunteer
-    volunteer = db.query(Volunteer).filter(Volunteer.id == volunteer_id).first()
+    volunteer = db.query(Volunteer).filter(Volunteer.id == volunteer_id, Volunteer.deleted_at.is_(None)).first()
     if not volunteer:
         logger.warning(f"Volunteer with id {volunteer_id} not found")
         raise HTTPException(404, "Volunteer not found")
@@ -119,7 +119,7 @@ def get_volunteer_with_skills(db: Session, volunteer_id: int):
 
 def add_skill_to_volunteer(db: Session, volunteer_id: int, skill_id: int):
     volunteer = get_volunteer(db, volunteer_id)
-    skill = db.query(Skill).filter(Skill.id == skill_id).first()
+    skill = db.query(Skill).filter(Skill.id == skill_id, Skill.deleted_at.is_(None)).first()
     
     if not skill:
         logger.warning(f"Skill with id {skill_id} not found")
@@ -139,7 +139,9 @@ def remove_skill_from_volunteer(db: Session, volunteer_id: int, skill_id: int):
 
     stmt = select(volunteer_skills).where(
     volunteer_skills.c.volunteer_id == volunteer_id,
-    volunteer_skills.c.skill_id == skill_id)
+    volunteer_skills.c.skill_id == skill_id,
+    volunteer_skills.c.deleted_at.is_(None)
+    )
 
     skill = db.execute(stmt).first()
 
