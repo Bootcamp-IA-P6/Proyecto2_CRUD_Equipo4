@@ -44,7 +44,7 @@ def read_role(role_id: int, db: Session = Depends(get_db)):
     ## 📝 Ejemplo de uso
     `GET /roles/3`
     """
-    role = RoleController.get_one_role(db, role_id=role_id)
+    return RoleController.get_one_role(db, role_id=role_id)
 
 #POST 
 @role_router.post("/", response_model=role_schema.RoleOut)

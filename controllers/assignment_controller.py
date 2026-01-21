@@ -54,11 +54,11 @@ class AssignmentController:
             ).first()
             
             if not volunteer_skill:
-                logger.warning(f"Volunteer skill with id={data.volunteer_skill_id} not found")
+                logger.warning(f"Integrity error creating assignment: {e}")
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, 
-                    detail="Volunteer skill not found"
-                )
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                    detail="Database integrity error"
+                )       #
                 
             #validar que coincidan las skill
             if project_skill.skill_id != volunteer_skill.skill_id:
@@ -105,9 +105,9 @@ class AssignmentController:
         
         except IntegrityError as e:
             db.rollback()
-            logger.exception(f"Integrity error creating assignment: {str(e)}")
+            logger.exception(f"Assignment already exists for this project and volunteer: {str(e)}")
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=status.HTTP_409_CONFLICT,
                 detail="Database integrity error creating assignment")
         
         except Exception as e:
@@ -139,7 +139,7 @@ class AssignmentController:
             ).first()
             
             if not assignment:
-                logger.warning(f"Assignment with id={assignment_id} not found")
+                logger.warning(f"Assignment with ID {assignment_id} not found")
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND, 
                     detail="Assignment not found"
