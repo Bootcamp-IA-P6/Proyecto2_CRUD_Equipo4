@@ -16,7 +16,7 @@ def get_skills(db: Session):
 
 #Get skill by ID
 def get_skill(db: Session, id: int):
-    logger.info(f"Trying to get skill {id}")
+    logger.info(f"Trying to get skill with ID {id}")
     skill = db.query(Skill).filter(Skill.id == id, Skill.deleted_at.is_(None)).first()
 
     if not skill:
@@ -33,7 +33,7 @@ def create_skill(db: Session, data: SkillCreate):
         db.add(skill)
         db.commit()
         db.refresh(skill)
-        logger.info(f"Skill {skill.name} created")
+        logger.info(f"Created a {skill.name} skill")
         return skill
     
     except IntegrityError:
@@ -50,8 +50,12 @@ def update_skill(db: Session, id: int, data: SkillUpdate):
         skill.name = data.name
         db.commit()
         db.refresh(skill)
-        logger.info(f"Skill updated: {skill.id} -> {skill.name}") #Comprobar relación....
+        logger.info(f"{skill.name} Skill updated with ID {skill.id}")
         return skill
+    
+    except HTTPException:
+        db.rollback()
+        raise
     
     except IntegrityError:
         db.rollback()
@@ -67,8 +71,14 @@ def delete_skill(db: Session, id: int):
         logger.warning(f"Skill already deleted")
         raise HTTPException(status_code=400, detail="Skill already deleted")    #Bad request
     
-    skill.deleted_at = datetime.now()
-    db.commit()
-    db.refresh(skill)
-    logger.info(f"Skill deleted: {skill.id}")
-    return skill
+    try:
+        skill.deleted_at = datetime.now()
+        db.commit()
+        db.refresh(skill)
+        logger.info(f"{skill.name} skill deleted with ID {skill.id}")
+        return skill
+    
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error removing skill: {e}")
+        raise HTTPException(status_code=500, detail="Error removing skill")     #Internal Server Error
