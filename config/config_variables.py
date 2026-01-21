@@ -10,6 +10,9 @@ class Settings:
     DB_HOST: str = os.getenv("DB_HOST", "localhost")
     DB_DEV_NAME: str = os.getenv("DB_DEV_NAME", "volunteer_crud")
     DB_TEST_NAME: str = os.getenv("DB_TEST_NAME", "volunteer_crud_test")
+    DB_PORT: str = os.getenv("DB_PORT", "3306")
+    DB_DIALECT: str = os.getenv("DB_DIALECT", "mysql+pymysql")  ###he agregado estas dos variales para centralizarlo todo en este archivo
+
 
 
 settings = Settings() 
