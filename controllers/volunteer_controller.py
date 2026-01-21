@@ -131,6 +131,7 @@ def add_skill_to_volunteer(db: Session, volunteer_id: int, skill_id: int):
     return volunteer
 
 #Remove Skill from Volunteer
+
 def remove_skill_from_volunteer(db: Session, volunteer_id: int, skill_id: int):
     logger.info(f"Removing skill {skill_id} from volunteer {volunteer_id}")
 
