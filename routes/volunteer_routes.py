@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from fastapi_pagination import Page
 from database.database import get_db
 from schemas.volunteer_schema import (
     VolunteerCreate,
@@ -40,17 +41,17 @@ def create(volunteer: VolunteerCreate, db: Session = Depends(get_db)):
     """
     return create_volunteer(db, volunteer)
 
-@router.get("/", response_model=list[VolunteerOut])
+@router.get("/", response_model=Page[VolunteerOut])
 def list_all(db: Session = Depends(get_db)):
     """
     Recupera información completa de todos los voluntarios activos del sistema.
+    Implementa paginación para manejar grandes volúmenes eficientemente.
     
     ## Respuesta
     Lista de objetos VolunteerOut con información detallada de cada voluntario.
-
     
     ## 📝 Ejemplo de uso
-    `GET /volunteers/`
+    `GET /volunteers/?page=0&size=10`
 
     """
     return get_volunteers(db)

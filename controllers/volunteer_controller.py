@@ -4,12 +4,14 @@ from fastapi import HTTPException
 from datetime import datetime
 from config.logging_config import get_logger
 from sqlalchemy import select, update, join, and_
+from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination import Page
 
 from models.volunteers_model import Volunteer
 from models.users_model import User
 from models.skill_model import Skill
 from models.volunteer_skill_model import volunteer_skills
-from schemas.volunteer_schema import VolunteerCreate, VolunteerUpdate
+from schemas.volunteer_schema import VolunteerCreate, VolunteerUpdate, VolunteerOut
 from domain.volunteer_enum import VolunteerStatus
 
 
@@ -45,9 +47,10 @@ def create_volunteer(db: Session, data: VolunteerCreate):
         raise HTTPException(status_code=500, detail="Internal server error")    #Internal server Error
 
 #Get all Volunteers
-def get_volunteers(db: Session):
+def get_volunteers(db: Session) -> Page[VolunteerOut]:
     logger.info(f"Getting volunteers list")
-    return db.query(Volunteer).all()
+    
+    return paginate(db.query(Volunteer).filter(Volunteer.deleted_at.is_(None)))
 
 #Get Volunteer by ID
 def get_volunteer(db: Session, id: int):

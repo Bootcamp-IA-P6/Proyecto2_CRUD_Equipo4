@@ -1,18 +1,20 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination import Page
 from fastapi import HTTPException
 from datetime import datetime
 from config.logging_config import get_logger
 
 from models.skill_model import Skill
-from schemas.skills_schema import SkillCreate, SkillUpdate
+from schemas.skills_schema import SkillCreate, SkillUpdate, SkillOut
 
 logger = get_logger("Skills")
 
 #Get all skills
-def get_skills(db: Session):
+def get_skills(db: Session)-> Page[SkillOut]:
     logger.info(f"Getting skills list")
-    return db.query(Skill).filter(Skill.deleted_at.is_(None)).all()
+    return paginate(db.query(Skill).filter(Skill.deleted_at.is_(None)))
 
 #Get skill by ID
 def get_skill(db: Session, id: int):

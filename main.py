@@ -1,6 +1,7 @@
 import models
 import textwrap
 from fastapi import FastAPI
+from fastapi_pagination import add_pagination
 from database.database import Base, engine
 from routes import volunteer_routes, users_routes, project_routes, category_routes, role_routes, skill_routes, assignment_routes, export
 from config.logging_config import get_logger
