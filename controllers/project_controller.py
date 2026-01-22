@@ -15,7 +15,7 @@ from models.volunteer_skill_model import volunteer_skills
 from models.volunteers_model import Volunteer
 from models.users_model import User
 
-logger = get_logger("project")
+logger = get_logger("Project")
 
 class ProjectController:
 

@@ -8,7 +8,7 @@ from fastapi_pagination import Page
 from config.logging_config import get_logger
 from datetime import datetime, timezone
 
-logger = get_logger("category")
+logger = get_logger("Categories")
 
 
 def create_category(db: Session, data: CategoryCreate):

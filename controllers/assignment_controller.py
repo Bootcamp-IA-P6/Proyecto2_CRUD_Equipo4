@@ -14,7 +14,7 @@ from domain.assignment_enum import AssignmentStatus
 from config.logging_config import get_logger
 
 
-logger = get_logger("assignments")
+logger = get_logger("Assignments")
 
 
 class AssignmentController:
