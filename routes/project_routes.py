@@ -212,3 +212,28 @@ async def remove_all_skills(id: int, db: Session = Depends(get_db)):
     
     """
     return await ProjectController.remove_all_skills_from_project(db, id)
+
+
+#Matching - no asigna
+@project_router.get("/{project_id}/matching-volunteers",status_code=200)
+def get_matching_volunteers(project_id: int, db: Session = Depends(get_db)):
+    """
+        Devuelve los voluntarios que tienen match con las skills del proyecto.
+        
+        ## Parámetros
+        - **id**: ID del proyecto
+        
+        ## Respuesta
+        Lista con:
+        - **Volunteer_id**: ID del voluntario.
+        - **Volunteer_name**: Nombre del voluntario.
+        - **Matched_skills**: Lista de Skills.
+            - **id**: ID de la Skill
+            - **name**: Nombre de la Skill
+        
+        
+        ## 📝 Ejemplo de uso
+        `GET /projects/1/matching-volunteers`
+    
+    """
+    return ProjectController.get_matching_volunteers(db, project_id)
