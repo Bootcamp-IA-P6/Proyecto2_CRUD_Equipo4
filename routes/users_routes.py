@@ -8,7 +8,7 @@ from schemas import users_schema
 
 user_router = APIRouter(
     prefix="/users",
-    tags=["users"]
+    tags=["Users"]
 )
 
 #GET ALL USERS
