@@ -148,42 +148,9 @@ uvicorn main:app --reload
 
 ### **API Documentation:**
 
-- **Swagger UI:** `http://localhost:8000/docs`
-- **ReDoc:** `http://localhost:8000/redoc`
+- **TESTING API -> Swagger UI:** `http://localhost:8000/docs`
 
-### **Endpoints principales:**
-
-#### **Usuarios (`/v1/`):**
-
-- `POST /users/` - Crear usuario
-- `GET /users/` - Listar usuarios
-- `GET /users/{id}` - Obtener usuario
-- `PUT /users/{id}` - Actualizar usuario
-- `DELETE /users/{id}` - Eliminar usuario
-
-#### **Voluntarios (`/v1/`):**
-
-- `POST /volunteers/` - Crear voluntario
-- `GET /volunteers/` - Listar voluntarios
-- `GET /volunteers/{id}` - Obtener voluntario
-- `PUT /volunteers/{id}` - Actualizar voluntario
-- `DELETE /volunteers/{id}` - Eliminar voluntario
-
-#### **Proyectos (`/v1/projects/`):**
-
-- `POST /projects/items/` - Crear proyecto
-- `GET /projects/items/` - Listar proyectos
-- `GET /projects/items/{id}` - Obtener proyecto
-- `PUT /projects/items/{id}` - Actualizar proyecto
-- `DELETE /projects/items/{id}` - Eliminar proyecto
-
-#### **Categorías (`/v1/categories/`):**
-
-- `POST /categories/` - Crear categoría
-- `GET /categories/` - Listar categorías
-- `GET /categories/{id}` - Obtener categoría
-- `PUT /categories/{id}` - Actualizar categoría
-- `DELETE /categories/{id}` - Eliminar categoría
+- **DOCUMENTATION & INFO -> ReDoc:** `http://localhost:8000/redoc`
 
 ---
 
