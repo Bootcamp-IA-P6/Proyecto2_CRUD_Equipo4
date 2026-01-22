@@ -29,7 +29,11 @@ def export_csv(select: str, db: Session = Depends(get_db)):
         return Response(status_code=404, detail="Select not found")
     
     model = selects[select]
+    
     results = db.query(model).all()
+    print("RESULTADOS:", results)
+    print("TOTAL:", len(results))
+
     
     if not results:
         return Response(status_code=404, detail="Data export not found")

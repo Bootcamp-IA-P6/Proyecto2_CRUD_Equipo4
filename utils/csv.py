@@ -5,7 +5,7 @@ def generate_csv(rows: list[dict]) -> str:
     """
     Genera un archivo CSV a partir de una lista de diccionarios.
     """
-    if rows:
+    if not rows:
         return ""
     
     buffer = StringIO()
