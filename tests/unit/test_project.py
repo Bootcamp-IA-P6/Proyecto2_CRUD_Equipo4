@@ -1,6 +1,6 @@
 import pytest
 from fastapi import HTTPException
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
 from controllers.project_controller import ProjectController
 from schemas.project_schema import ProjectCreate
@@ -23,7 +23,7 @@ async def test_create_project_success(db_session):
     data = ProjectCreate(
         name="Proyecto A",
         description="Proyecto de prueba",
-        deadline=datetime.utcnow() + timedelta(days=10),
+        deadline=datetime.now(timezone.utc) + timedelta(days=10),
         status=Project_status.assigned,     
         priority=Project_priority.high,     
         category_id=category.id
@@ -51,7 +51,7 @@ async def test_create_project_duplicate_name(db_session):
     data = ProjectCreate(
         name="Proyecto Duplicado",
         description="desc",
-        deadline=datetime.utcnow(),
+        deadline=datetime.now(timezone.utc) ,
         status=Project_status.assigned,      
         priority=Project_priority.medium,   
         category_id=category.id
