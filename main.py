@@ -32,6 +32,8 @@ app = FastAPI(
     
 )
 
+add_pagination(app)
+
 #print(Base.metadata.tables.keys())
 #Base.metadata.create_all(bind=engine)
 

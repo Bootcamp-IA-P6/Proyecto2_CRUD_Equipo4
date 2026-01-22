@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-
+from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -61,7 +61,7 @@ async def read_project(project_id: int, db: Session = Depends(get_db)):
     return await ProjectController.get_project(db, project_id=project_id)
 
 #READ ALL PROJECTS
-@project_router.get("/", response_model=List[project_schema.ProjectOut])
+@project_router.get("/", response_model=Page[List[project_schema.ProjectOut]])
 async def read_all_projects(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """
         Recupera información completa de todos los proyectos del sistema.
