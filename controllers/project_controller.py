@@ -5,7 +5,8 @@ from schemas import project_schema as schema
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from config.logging_config import get_logger
-
+from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination import Page
 from models.project_model import Project
 from models.project_skill_model import project_skills
 from models.skill_model import Skill
@@ -20,10 +21,10 @@ class ProjectController:
 
     #READ ALL PROJECTS
     @staticmethod
-    async def get_projects(db: Session, skip: int = 0, limit: int = 100) -> list[schema.ProjectOut]:
+    async def get_projects(db: Session) -> Page[schema.ProjectOut]:
         logger.info(f"Trying to get all projects")
-        projects = db.query(Project).filter(Project.deleted_at.is_(None)).offset(skip).limit(limit).all()
-        return [schema.ProjectOut.model_validate(project) for project in projects]
+        
+        return paginate(db.query(Project).filter(Project.deleted_at.is_(None)))
     
     
     #READ ONE PROJECT

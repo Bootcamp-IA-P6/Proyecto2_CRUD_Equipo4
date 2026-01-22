@@ -1,8 +1,10 @@
 from sqlalchemy.orm import Session
 from models.category_model import Category
-from schemas.category_schemas import CategoryCreate, CategoryUpdate
+from schemas.category_schemas import CategoryCreate, CategoryUpdate, CategoryOut
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
+from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination import Page
 from config.logging_config import get_logger
 from datetime import datetime, timezone
 
@@ -31,9 +33,9 @@ def create_category(db: Session, data: CategoryCreate):
         raise HTTPException(status_code=409, detail=f"Category violates a database constraint")     #Conflict
 
 
-def get_categories(db: Session):
+def get_categories(db: Session) -> Page[CategoryOut]:
     logger.info(f"Getting categories list")
-    return db.query(Category).filter(Category.deleted_at.is_(None)).all()
+    return paginate(db.query(Category).filter(Category.deleted_at.is_(None)))
 
 def get_category(db: Session, id: int):
     logger.info(f"Trying to get category with ID {id}")
