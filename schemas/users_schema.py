@@ -15,10 +15,8 @@ class UserCreate(UserBase):
 
 class UserOut(UserBase):
     id: int
-    name: str
-    email: EmailStr
-    phone: str | None
-    birth_date: date | None
+    created_at: datetime
+    updated_at: datetime
     
     model_config = ConfigDict(from_attributes=True)
 

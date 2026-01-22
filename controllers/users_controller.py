@@ -33,7 +33,7 @@ class UserController:
     @staticmethod
     #GET USER BY ID
     def get_one_user(db: Session, user_id: int):
-        logger.info(f"Getting user with id={user_id}")
+        logger.info(f"Getting user with ID {user_id}")
         
         user =  (
             db.query(User)
@@ -42,8 +42,8 @@ class UserController:
         )
         
         if not user:
-            logger.warning(f"User with id={user_id} not found")
-            raise HTTPException(status_code=404, detail="User not found")
+            logger.warning(f"User with ID {user_id} not found")
+            raise HTTPException(status_code=404, detail="User not found")   #Not found
         
         return users_schema.UserOut.model_validate(user)
     
@@ -51,13 +51,13 @@ class UserController:
     @staticmethod
     #CREATE USER
     def create_user(db: Session, user: users_schema.UserCreate):
-        logger.info(f"Creating user with email={user.email}")
+        logger.info(f"Creating user")
         
         hashed_password = hash_password(user.password)
         
         if db.query(User).filter(User.email == user.email).first():
-            logger.warning(f"User with email={user.email} already exists")
-            raise HTTPException(status_code=400, detail="User already exists")
+            logger.warning(f"User with email: {user.email} already exists")
+            raise HTTPException(status_code=409, detail="User already exists")  #Conflict
         
         try:
             db_user = User(
@@ -71,24 +71,24 @@ class UserController:
             db.commit()
             db.refresh(db_user)
             
-            logger.info(f"User with id={db_user.id} created")
+            logger.info(f"User with ID {db_user.id} created")
             return users_schema.UserOut.model_validate(db_user)
         
-        except IntegrityError:
+        except IntegrityError as e: 
             db.rollback()
-            logger.exception(f"Error creating user: {e}")
-            raise HTTPException(status_code=400, detail="Email already exists")
+            logger.exception(f"Integrity error creating user: {e}")
+            raise HTTPException(status_code=409, detail="User already exists")     #Conflict
         
         except Exception as e:
             db.rollback()
-            logger.exception(f"Error creating user: {e}")
-            raise HTTPException(status_code=500, detail="Error creating user")
+            logger.exception(f"Unexpected error creating user: {e}")
+            raise HTTPException(status_code=500, detail="Error creating user")      #Internal server error
         
     
     @staticmethod
     #UPDATE USER
     def update_user(db: Session, user_id: int, user: users_schema.UserUpdate):
-        logger.info(f"Updating user with id={user_id}")
+        logger.info(f"Updating user with ID: {user_id}")
         
         db_user = (
             db.query(User)
@@ -97,8 +97,8 @@ class UserController:
         )
         
         if not db_user:
-            logger.warning(f"User with id={user_id} not found")
-            raise HTTPException(status_code=404, detail="User not found")
+            logger.warning(f"User with ID {user_id} not found")
+            raise HTTPException(status_code=404, detail="User not found")   #Not found
         
         #Actualizar solo los campos que se envian
         try:
@@ -111,8 +111,9 @@ class UserController:
                     .filter(User.email == user.email, User.id != user_id)
                     .first()
                 ):
+                    logger.warning(f"Email {user.email} already exists for another user")
                     raise HTTPException(
-                        status_code=400, detail="Email already exists"
+                        status_code=409, detail="Email already exists"      #Conflict
                 )
                 db_user.email = user.email
             if user.password is not None:
@@ -125,22 +126,27 @@ class UserController:
             db.commit()
             db.refresh(db_user)
             
-            logger.info(f"User with id={user_id} updated")
+            logger.info(f"User with ID {user_id} updated")
             return users_schema.UserOut.model_validate(db_user)
         
         except HTTPException:
             db.rollback()
             raise
         
+        except IntegrityError:
+            db.rollback()
+            logger.warning(f"Integrity error updating user {user_id}")
+            raise HTTPException( status_code=409, detail="Email already exists")    #Conflict
+            
         except Exception as e:
             db.rollback()
-            logger.exception(f"Error updating user with id={user_id}: {e}")
-            raise HTTPException(status_code=500, detail="Error updating user")
+            logger.exception(f"Error updating user with ID {user_id}: {e}")
+            raise HTTPException(status_code=500, detail="Error updating user")      #Internal server Error
     
     @staticmethod
     #DELETE USER
     def delete_user(db: Session, user_id: int):
-        logger.info(f"Deleting user with id={user_id}")
+        logger.info(f"Deleting user with ID {user_id}")
         
         db_user = (
             db.query(User).filter(User.id == user_id, User.deleted_at.is_(None))
@@ -148,16 +154,16 @@ class UserController:
         )
         
         if not db_user:
-            logger.warning(f"User with id={user_id} not found")
-            raise HTTPException(status_code=404, detail="User not found")
+            logger.warning(f"User with ID {user_id} not found")
+            raise HTTPException(status_code=404, detail="User not found")       #Not found
         
         try:
             db_user.deleted_at = datetime.utcnow()
             db.commit()
-            logger.info(f"User with id={user_id} deleted")
+            logger.info(f"User with ID {user_id} deleted")
             return {"message": "User deleted successfully"}
         
         except Exception as e:
             db.rollback()
-            logger.exception(f"Error deleting user id={user_id}: {e}")
-            raise HTTPException(status_code=500, detail="Error deleting user")
+            logger.exception(f"Error deleting user ID {user_id}: {e}")
+            raise HTTPException(status_code=500, detail="Error deleting user")      #Internal server error

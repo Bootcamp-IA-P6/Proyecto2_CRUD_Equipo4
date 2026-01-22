@@ -4,7 +4,8 @@ from database.database import get_db
 from schemas.volunteer_schema import (
     VolunteerCreate,
     VolunteerUpdate,
-    VolunteerOut
+    VolunteerOut,
+    VolunteerWithSkills
 )
 from controllers.volunteer_controller import *
 
@@ -32,3 +33,20 @@ def update(id: int, data: VolunteerUpdate, db: Session = Depends(get_db)):
 @router.delete("/{id}", response_model=VolunteerOut)
 def delete(id: int, db: Session = Depends(get_db)):
     return delete_volunteer(db, id)
+
+###
+
+@router.get("/{id}/skills", response_model=VolunteerWithSkills)
+def get_volunteer_skills(id: int, db: Session = Depends(get_db)):
+    return get_volunteer_with_skills(db, id)
+
+@router.post("/{volunteer_id}/skills/{skill_id}", response_model=VolunteerWithSkills)
+def add_skill(volunteer_id: int, skill_id: int, db: Session = Depends(get_db)):
+    return add_skill_to_volunteer(db, volunteer_id, skill_id)
+
+
+@router.delete("/{volunteer_id}/skills/{skill_id}", status_code=204)
+def remove_skill(volunteer_id: int, skill_id: int, db: Session = Depends(get_db)):
+    remove_skill_from_volunteer(db, volunteer_id, skill_id)
+    return
+

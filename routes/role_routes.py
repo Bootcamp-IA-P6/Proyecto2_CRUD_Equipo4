@@ -19,7 +19,7 @@ def read_roles(db: Session = Depends(get_db)):
 #GET ROLE BY ID
 @role_router.get("/{role_id}", response_model=role_schema.RoleOut)
 def read_role(role_id: int, db: Session = Depends(get_db)):
-    role = RoleController.get_one_role(db, role_id=role_id)
+    return RoleController.get_one_role(db, role_id=role_id)
 
 #POST 
 @role_router.post("/", response_model=role_schema.RoleOut)

@@ -1,11 +1,15 @@
 import datetime
-
+from sqlalchemy import select, update, insert
 from sqlalchemy.orm import Session
 from schemas import project_schema as schema
-from models.project_model import Project
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from config.logging_config import get_logger
+
+from models.project_model import Project
+from models.project_skill_model import project_skills
+from models.skill_model import Skill
+from controllers.skill_controller import get_skill
 
 logger = get_logger("project")
 
@@ -14,33 +18,36 @@ class ProjectController:
 
     @staticmethod
     async def get_all_items(db: Session) -> list[schema.ProjectOut]:
+        logger.info("Getting project list")
         items = db.query(Project).all()
         return [schema.ProjectOut.model_validate(item) for item in items]
 
     @staticmethod
     async def get_items(db: Session, skip: int = 0, limit: int = 100) -> list[schema.ProjectOut]:
+        logger.info("Getting project list")
         items = db.query(Project).offset(skip).limit(limit).all()
         return [schema.ProjectOut.model_validate(item) for item in items]
 
     @staticmethod
     async def get_item(db: Session, item_id: int) -> schema.ProjectOut:
-        logger.info(f"Trying to get project id= {item_id}")
+        logger.info(f"Trying to get project with ID {item_id}")
         item = db.query(Project).filter(Project.id == item_id, Project.deleted_at.is_(None)).first()
 
         if not item:
-            logger.warning(f"Project with id {item_id} does not exist")
-            raise HTTPException(status_code=404, detail="Project not found")
+            logger.warning(f"Project with ID {item_id} not found")
+            raise HTTPException(status_code=404, detail="Project not found")    #not found
+        
         return schema.ProjectOut.model_validate(item) if item else None
 
     @staticmethod
     async def create_item(db: Session, item: schema.ProjectCreate)-> schema.ProjectOut:
-        logger.info(f"Trying to create project for ={item.name}")
+        logger.info(f"Trying to create project {item.name}")
         
         existing = db.query(Project).filter(Project.name == item.name).first()
 
         if existing:
-            logger.warning(f"Project {item.name} already exist (id={existing.id})")
-            raise HTTPException(status_code=400, detail="Project already exist")
+            logger.warning(f"Project {item.name} already exist with ID {existing.id})")
+            raise HTTPException(status_code=409, detail="Project already exist")        #Conflict
 
         db_item = Project(**item.dict())
 
@@ -50,21 +57,27 @@ class ProjectController:
             db.refresh(db_item)
             logger.info(f"Project {item.name} created successfully.")
             return schema.ProjectOut.model_validate(db_item)
+        
         except IntegrityError as e:
             db.rollback()
+            logger.error(f"Project already exist: {e}")
+            raise HTTPException(status_code=409, detail=f"Project already exist")   #conflict
+        
+        except Exception as e:
+            db.rollback()
             logger.error(f"Error creating project: {e}")
-            raise HTTPException(status_code=409, detail=f"Project violates a database constraint")
+            raise HTTPException(status_code=500, detail="Error creating project")   #Internal server error
 
 
 
     @staticmethod
-    async def update_item(db: Session, item_id: int, item: schema.ProjectCreate) -> schema.ProjectOut:
-        logger.info(f"Trying to update project {item_id}")
+    async def update_item(db: Session, item_id: int, item: schema.ProjectUpdate) -> schema.ProjectOut:
+        logger.info(f"Trying to update project {item.name}")
         db_item = db.query(Project).filter(Project.id == item_id).first()
 
         if not db_item:
-            logger.info(f"Project with ID {item_id} not found")
-            raise HTTPException(status_code=404, detail="Project no found")
+            logger.warning(f"Project with ID {item_id} not found")
+            raise HTTPException(status_code=404, detail="Project no found")     #Not found
         
         try:     
             if item.name is not None:
@@ -80,15 +93,18 @@ class ProjectController:
                 
             db.commit()
             db.refresh(db_item)
-            logger.info(f"updated project: {item_id}")
+            logger.info(f"{db_item.name} projects has been updated with ID {item_id}")
             return schema.ProjectOut.model_validate(db_item)
             
         except IntegrityError as e:
             db.rollback()
-            logger.error(f"Invalid data for project: {e}")
-            raise HTTPException(status_code=400, detail="Invalid data: Error updating project")
-    
-
+            logger.warning(f"Project with ID {item_id} not found")
+            raise HTTPException(status_code=400, detail="Project not found")    #Not found
+        
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error creating project: {e}")
+            raise HTTPException(status_code=500, detail="Error updating project")   #Internal server error
 
 
     @staticmethod
@@ -97,18 +113,169 @@ class ProjectController:
         project = db.query(Project).filter(Project.id == item_id).first()
         
         if not project:
-            logger.warning(f"Project {item_id} not found")
+            logger.warning(f"Project with ID {item_id} not found")
             raise HTTPException(status_code=404, detail="Project not found")
 
         if project.deleted_at is not None:
-            logger.warning(f"Volunteer id={id} already deleted at {volunteer.deleted_at}")
-            raise HTTPException(status_code=400, detail="Volunteer already deleted")
-            
+            logger.warning(f"Project {item_id} already deleted at {project.deleted_at}")
+            raise HTTPException(status_code=400, detail="Project already deleted")      #Bad request
         
         project.deleted_at = datetime.utcnow()
         db.commit()
-        logger.info(f"Soft-deleted project id={project.id}")
+        logger.info(f"Soft-deleted for project with ID {project.id}")
+        
+        return schema.ProjectOut.model_validate(project)
+
+
+    ###PROJECT+SKILLS###
+
+    #add skill
+    @staticmethod
+    async def add_skill_to_project(db: Session, project_id: int, skill_id: int):
+        project = db.query(Project).filter(Project.id == project_id, Project.deleted_at.is_(None)).first()
+        if not project:
+            logger.warning(f"Project with ID {project_id} not found")
+            raise HTTPException(status_code=404, detail="Project not found")    #Not found
+
+        skill = get_skill(db, skill_id)
+
+        existing_relation = db.execute(
+            select(project_skills)
+            .where(
+                project_skills.c.project_id == project_id,
+                project_skills.c.skill_id == skill_id
+            )
+        ).first()
+
+        if existing_relation:
+            #reactivar la relacion
+            if existing_relation.deleted_at is not None:
+                db.execute(
+                    update(project_skills)
+                    .where(
+                        project_skills.c.project_id == project_id,
+                        project_skills.c.skill_id == skill_id
+                    )
+                    .values(deleted_at=None)
+                )
+                logger.info(f"Skill {skill_id} reactivated for project {project_id}")
+            else:
+                # Si ya está activa, error de duplicado
+                logger.warning(f"Project already has this skill")
+                raise HTTPException(status_code=409, detail="project already has this skill")   #Bad Request
+        else:
+        
+            db.execute(
+                insert(project_skills).values(
+                    project_id=project_id,
+                    skill_id=skill_id,
+                    deleted_at=None
+                )
+            )
+            logger.info(f"Skill {skill_id}:{skill.name} added to {project.name} project")
+    
+        db.commit()
+        db.refresh(project)
+        logger.info(f"Skill added to project successfully")
+        return schema.ProjectSkillsOut.model_validate(project)
+
+
+    #read project+skill
+    @staticmethod
+    async def get_project_with_skills(db: Session, project_id: int):
+    
+        project = db.query(Project).filter(Project.id == project_id, Project.deleted_at.is_(None)).first()
+        if not project:
+            logger.warning(f"Project with ID {project_id} not found")
+            raise HTTPException(status_code=404, detail="Project not found")    #Not found
+        
+        skills = db.query(Skill).join(project_skills).filter(
+            project_skills.c.project_id == project_id,
+            Skill.deleted_at.is_(None)
+        ).all()
         
         
-        return project
+        project.skills = skills
+        return schema.ProjectSkillsOut.model_validate(project)
+
+    #remove one skill
+    @staticmethod
+    async def remove_skill_from_project(db: Session, project_id: int, skill_id: int):
+        project = db.query(Project).filter(Project.id == project_id, Project.deleted_at.is_(None)).first()
+        if not project:
+            logger.warning(f"Project with ID {project_id} not found")
+            raise HTTPException(status_code=404, detail="Project not found")    #Not found
+            
+        #verificar que el skill existe
+        get_skill(db, skill_id)
+        
+        #verificar que existe la relacion activa
+        existing = db.execute(
+            project_skills.select().where(
+                project_skills.c.project_id == project_id,
+                project_skills.c.skill_id == skill_id,
+                project_skills.c.deleted_at.is_(None)
+            )
+        ).first()
+        
+        if not existing:
+            logger.warning(f"Skill {skill_id} not assigned to project {project_id}")
+            raise HTTPException(404, "Skill not assigned to project")       #Not found
+        
+        try:
+            # Soft delete
+            upd = (
+                update(project_skills)
+                .where(
+                        project_skills.c.project_id == project_id,
+                        project_skills.c.skill_id == skill_id,
+                        project_skills.c.deleted_at.is_(None)
+                )
+                .values(deleted_at=datetime.utcnow())
+            )
+
+            db.execute(upd)
+            db.commit()
+            logger.info(f"Skill {skill_id} removed from project {project_id}")
+            return schema.ProjectSkillsOut.model_validate(project)
+        
+        except Exception as e:
+            db.rollback()
+            logger.exception(f"Error removing skill from project: {e}")
+            raise HTTPException(status_code=500, detail="Error removing skill from project")    #Internal server error
+        
+
+
+    #remove all skills from project
+    @staticmethod
+    async def remove_all_skills_from_project(db: Session, project_id: int):
+    
+        project = db.query(Project).filter(Project.id == project_id, Project.deleted_at.is_(None)).first()
+        
+        if not project:
+            logger.warning(f"Project with ID {project_id} not found")
+            raise HTTPException(status_code=404, detail="Project not found")   #Not found
+        
+        
+
+        try:
+
+            update_stmt = update(project_skills).where(
+                                project_skills.c.project_id == project_id,
+                                project_skills.c.deleted_at.is_(None)
+                                    ).values(deleted_at=datetime.utcnow())
+        
+            db.execute(update_stmt)
+            db.commit()
+            db.refresh(project)
+            project.skills = []
+            
+            logger.info(f"All skills soft-deleted for project {project_id}")
+            return schema.ProjectSkillsOut.model_validate(project)
+            
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error soft-deleting all skills: {e}")
+            raise HTTPException(status_code=500, detail="Error soft-deleting all skills")   #Internal server error
+
 

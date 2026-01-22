@@ -10,12 +10,12 @@ logger = get_logger("category")
 
 
 def create_category(db: Session, data: CategoryCreate):
-    logger.info(f"Trying to create category with name {data.name}")
+    logger.info(f"Trying to create category {data.name}")
 
     existing = db.query(Category).filter(Category.name == data.name, Category.deleted_at.is_(None)).first()
     if existing:
-        logger.warning(f"Category {data.name} already exist (id={existing.id})")
-        raise HTTPException(status_code=400, detail="Category already exist")
+        logger.warning(f"Category {data.name} already exist with ID {existing.id})")
+        raise HTTPException(status_code=400, detail="Category already exist")   #Bad Request
     
     category = Category(**data.dict())
     try:
@@ -24,10 +24,11 @@ def create_category(db: Session, data: CategoryCreate):
         db.refresh(category)
         logger.info(f"Category with ID {category.id} created successfully.")
         return category
+    
     except IntegrityError as e:
         db.rollback()
-        logger.error(f"Error creating category '{data.name}': {e}")
-        raise HTTPException(status_code=409, detail=f"Category violates a database constraint")
+        logger.warning(f"Error creating category '{data.name}': {e}")
+        raise HTTPException(status_code=409, detail=f"Category violates a database constraint")     #Conflict
 
 
 def get_categories(db: Session):
@@ -35,16 +36,16 @@ def get_categories(db: Session):
     return db.query(Category).filter(Category.deleted_at.is_(None)).all()
 
 def get_category(db: Session, id: int):
-    logger.info(f"Trying to get category id= {id}")
+    logger.info(f"Trying to get category with ID {id}")
 
     category = db.query(Category).filter(Category.id == id, Category.deleted_at.is_(None)).first()
     if not category:
-        logger.warning(f"Category with {id} does not exist or was deleted")
-        raise HTTPException(status_code=404, detail="Category not found")
+        logger.warning(f"Category with ID {id} not found")
+        raise HTTPException(status_code=404, detail="Category not found")   #Not found
     return category
 
 def update_category(db: Session, id: int, data: CategoryUpdate):
-    logger.info(f"Trying to update category id={id}")    
+    logger.info(f"Trying to update category with ID {id}")    
     category = get_category(db, id)
 
     try:
@@ -55,37 +56,34 @@ def update_category(db: Session, id: int, data: CategoryUpdate):
 
         db.commit()
         db.refresh(category)
-        logger.info(f"Category updated successfully id={id}")
+        logger.info(f"Category with ID {id} updated successfully")
         return category
 
     except IntegrityError as e:
         db.rollback()
-        logger.error(f"Integrity error updating category id={id}: {e}")
+        logger.warning(f"Integrity error updating category with ID {id}: {e}")
         raise HTTPException(
-            status_code=409, detail="Category violates a database constraint"
-        )
+            status_code=409, detail="Category violates a database constraint")      #Conflict
 
 def delete_category (db: Session, id: int): 
-    logger.info(f"Trying to delete the category id={id}")
+    logger.info(f"Trying to delete the category")
 
     category = get_category(db, id)
     
     if category.deleted_at is not None:
-        logger.warning(f"Category id={id} already deleted at {category.deleted_at}")
-        raise HTTPException(status_code=400, detail="Category already deleted")
+        logger.warning(f"{category.name} category with ID {id} already deleted at {category.deleted_at}")
+        raise HTTPException(status_code=400, detail="Category already deleted")     #Bad request
+    
     try:   
-        """
-        if not category:
-            return None
-        """
         category.deleted_at =datetime.now(timezone.utc)
         db.commit()
         db.refresh(category)
         logger.info(f"Category {category.id} soft deleted successfully")
         return category
-    except IntegrityError as e:
+    
+    except Exception as e:
         db.rollback()
-        logger.error(f"Integrity error deleting category id={id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Integrity error deleting category: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")        #Internal server error
 
 
