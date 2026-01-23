@@ -1,11 +1,15 @@
 ### dotenv ###
 .env
+.vscode
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+.opencode/
+.history/
+.DS_Store
 
 # C extensions
 *.so
