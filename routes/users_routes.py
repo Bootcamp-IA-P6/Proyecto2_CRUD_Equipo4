@@ -6,11 +6,16 @@ from typing import List
 from database.database import get_db
 from controllers.users_controller import UserController
 from schemas import users_schema
+from routes import auth_routes
 
 user_router = APIRouter(
     prefix="/users",
     tags=["Users"]
 )
+
+#Constantes para roles
+ROLE_ADMIN = 1
+ROLE_VOLUNTEER = 2
 
 #GET ALL USERS
 @user_router.get("/", response_model=Page[users_schema.UserOut])
@@ -37,7 +42,7 @@ def read_users(db: Session = Depends(get_db)):
 
 #GET USER BY ID
 @user_router.get("/{user_id}", response_model=users_schema.UserOut)
-def read_user(user_id: int, db: Session = Depends(get_db)):
+def read_user(user_id: int, db: Session = Depends(get_db), current_user = Depends(auth_routes.get_current_user)):
     """
 
     Recupera la información completa de un usuario mediante su identificador único.
@@ -53,12 +58,19 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
     `GET /users/42`
 
     """
+    '''
+    Admin: puede ver cualquier usuario
+    Voluntario: solo su propio perfil
+    '''
+    if current_user.role_id == ROLE_ADMIN or current_user.id == user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access Denied: Don't have permissions for this action")
+        
     return UserController.get_one_user(db, user_id=user_id)
 
 
-#CREATE USER
+#CREATE USER (solo admin)
 @user_router.post("/", response_model=users_schema.UserOut)
-def create_user(user: users_schema.UserCreate, db: Session = Depends(get_db)):
+def create_user_by_admin(user: users_schema.UserCreate, db: Session = Depends(get_db), current_user = Depends(auth_routes.require_admin)):
     """
     Registra un nuevo usuario en el sistema con validación automática de email único.
     Implementa hashing automático de contraseña para seguridad.
@@ -82,18 +94,19 @@ def create_user(user: users_schema.UserCreate, db: Session = Depends(get_db)):
         "birth_date": "1990-05-15"
     }
     ```
-    
+    - Solo admin puede crear usuarios directamente con rol específico. 
+    - El público usa el register
     """
     return UserController.create_user(db, user=user)
 
 
-#UPDATE USER
+#UPDATE USER -  usuario actualiza su perfil
 @user_router.put("/{user_id}", response_model=users_schema.UserOut)
-def update_user(user_id: int, user: users_schema.UserUpdate, db: Session = Depends(get_db)):
+def update_user_profile(user_id: int, user: users_schema.UserUpdate, db: Session = Depends(get_db), current_user = Depends(auth_routes.get_current_user)):
     """
 
-    Modifica la información de un usuario existente.
-    Permite actualización parcial (solo los campos proporcionados).
+    Modifica la información del usuario existente.
+    Permite actualización parcial (solo los campos proporcionados y permitidos).
     
     ## Parámetros
     - **user_id**: Identificador único del usuario a actualizar
