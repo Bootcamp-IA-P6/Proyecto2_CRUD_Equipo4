@@ -11,7 +11,7 @@ from utils.security import hash_password
 from config.logging_config import get_logger
 
 
-logger = get_logger("users")
+logger = get_logger("Users")
 
 
 class UserController:
