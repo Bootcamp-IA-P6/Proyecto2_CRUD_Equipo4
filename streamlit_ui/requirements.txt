@@ -1,0 +1,6 @@
+# Streamlit UI Requirements
+streamlit==1.53.1
+plotly==6.5.2
+requests==2.32.5
+pandas==2.3.3
+python-dotenv==1.2.1
