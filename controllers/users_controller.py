@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-
+from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination import Page
 from fastapi import HTTPException
 from datetime import datetime
 
@@ -10,25 +11,19 @@ from utils.security import hash_password
 from config.logging_config import get_logger
 
 
-logger = get_logger("users")
+logger = get_logger("Users")
 
 
 class UserController:
 
     @staticmethod
     #GET ALL USERS
-    def get_users(db: Session, skip: int = 0, limit: int = 100):
+    def get_users(db: Session) -> Page[users_schema.UserOut]:
         logger.info("Getting users list")
         
-        users = (
-            db.query(User)
-            .filter(User.deleted_at.is_(None))
-            .offset(skip)
-            .limit(limit)
-            .all()
-        )
+        return paginate (db.query(User).filter(User.deleted_at.is_(None)))
         
-        return [users_schema.UserOut.model_validate(user) for user in users]
+        
 
     @staticmethod
     #GET USER BY ID

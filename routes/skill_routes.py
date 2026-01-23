@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from fastapi_pagination import Page
 from database.database import get_db
 from controllers.skill_controller import get_skills, get_skill, create_skill, update_skill, delete_skill
 from schemas.skills_schema import SkillCreate, SkillUpdate, SkillOut
@@ -7,26 +8,19 @@ from typing import List
 
 skill_router = APIRouter(prefix="/skills", tags=["Skills"])
 
-@skill_router.get("/", response_model=List[SkillOut])
+@skill_router.get("/", response_model=Page[SkillOut])
 def read_skills(db: Session = Depends(get_db)):
     """
-    Listar todas las habilidades disponibles
-    
-    ## 🎯 Propósito
+
     Recupera el catálogo completo de habilidades del sistema.
-    Base para asignación a voluntarios y requisitos de proyectos.
+    Implementa paginación para manejar grandes volúmenes eficientemente.
     
-    ## ✅ Respuesta
+    ## Respuesta
     Lista de objetos SkillOut con información de cada habilidad.
     
-    ## ⚠️ Errores comunes
-    - **500**: Internal Server Error - Error en conexión a base de datos
-    
     ## 📝 Ejemplo de uso
-    `GET /skills/`
+    `GET /skills/?page=0&size=10`
     
-    ## 🔗 Relaciones
-    Cada habilidad puede ser asignada a múltiples voluntarios y requerida por múltiples proyectos.
     """
     return get_skills(db)
 

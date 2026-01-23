@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from fastapi_pagination import Page
 from typing import List 
 
 from database.database import get_db
@@ -17,15 +18,11 @@ ROLE_ADMIN = 1
 ROLE_VOLUNTEER = 2
 
 #GET ALL USERS
-@user_router.get("/", response_model=List[users_schema.UserOut])
-def read_users(
-    skip: int = 0, 
-    limit: int = 100, 
-    db: Session = Depends(get_db)
-):
+@user_router.get("/", response_model=Page[users_schema.UserOut])
+def read_users(db: Session = Depends(get_db)):
     """
     Recupera una lista paginada de todos los usuarios activos del sistema.
-
+    Implementa paginación para manejar grandes volúmenes eficientemente.
     
     ## Parámetros
     - **skip**: Número de registros a omitir para paginación (default: 0)
@@ -37,10 +34,10 @@ def read_users(
     
     
     ## 📝 Ejemplo de uso
-    `GET /users/?skip=0&limit=10`
+    `GET /users/?page=0&size=10`
 
     """
-    return UserController.get_users(db, skip=skip, limit=limit)
+    return UserController.get_users(db)
     
 
 #GET USER BY ID
