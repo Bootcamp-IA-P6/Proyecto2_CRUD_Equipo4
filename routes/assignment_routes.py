@@ -1,19 +1,27 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
+from sqlalchemy import select
 
 from controllers.assignment_controller import AssignmentController
 from schemas import assignment_schema
 from domain.assignment_enum import AssignmentStatus
 from database.database import get_db
+from controllers.auth_controller import get_current_user, require_admin
+from models.users_model import User
+
 
 assignment_router = APIRouter(
     prefix="/assignments",
     tags=["Assignments"]
 )
 
+# Constantes para roles
+ROLE_ADMIN = 1
+ROLE_VOLUNTEER = 2
 
-# CREATE - Asignar voluntario a proyecto
+
+# CREATE - Asignar voluntario a proyecto (Solo admin)
 @assignment_router.post(
     "/", 
     status_code=status.HTTP_201_CREATED, 
@@ -21,10 +29,16 @@ assignment_router = APIRouter(
 )
 def create_assignment(
     data: assignment_schema.AssignmentCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
 ):
     """
-    Asignar un voluntario a un proyecto
+    Asignar un voluntario a un proyecto.
+    **Requiere permisos de administrador.**
+    
+    ## Permisos
+    - ✅ Admin: puede crear asignaciones para cualquier voluntario
+    - ❌ Voluntario: no puede crear asignaciones
     
     ## 🎯 Propósito
     Crea una nueva asignación vinculando un volunteer_skill con un project_skill.
@@ -45,6 +59,7 @@ def create_assignment(
     
     ## ⚠️ Errores comunes
     - **400**: Bad Request - Las skills no coinciden
+    - **403**: Forbidden - No tiene permisos de administrador
     - **404**: Not Found - project_skill o volunteer_skill no existen
     - **409**: Conflict - Ya existe una asignación activa para esta combinación
     
@@ -93,10 +108,15 @@ def create_assignment(
 )
 def get_volunteer_assignments(
     volunteer_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Recupera todas las asignaciones de un voluntario específico.
+    
+    ## Permisos
+    - ✅ Admin: puede ver asignaciones de cualquier voluntario
+    - ✅ Voluntario: solo puede ver sus propias asignaciones
     
     ## 🎯 Propósito
     Muestra todos los proyectos en los que está trabajando un voluntario,
@@ -130,38 +150,47 @@ def get_volunteer_assignments(
                 "id": 3,
                 "name": "Jardinería"
             }
-        },
-        {
-            "id": 3,
-            "status": "completed",
-            "created_at": "2024-02-15T09:00:00",
-            "project": {
-                "id": 8,
-                "name": "Limpieza de Playas",
-                "description": "Recolección de residuos"
-            },
-            "matched_skill": {
-                "id": 7,
-                "name": "Trabajo en Equipo"
-            }
         }
     ]
     ```
     """
+    # Obtener el voluntario para validar que pertenece al current_user
+    # Necesitarás importar el modelo Volunteer y hacer una query
+    from models.volunteer_model import Volunteer
+    
+    volunteer = db.query(Volunteer).filter(Volunteer.id == volunteer_id).first()
+    if not volunteer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Volunteer not found"
+        )
+    
+    # Verificar permisos: admin puede ver cualquiera, voluntario solo el suyo
+    if current_user.role_id != ROLE_ADMIN and volunteer.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access Denied: You can only view your own assignments"
+        )
+    
     return AssignmentController.get_assignments_by_volunteer(db, volunteer_id)
 
 
-# READ - Obtener asignaciones de un proyecto 
+# READ - Obtener asignaciones de un proyecto
 @assignment_router.get(
     "/project/{project_id}", 
     response_model=List[assignment_schema.AssignmentByProject]
 )
 def get_project_assignments(
     project_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Recupera el equipo completo de voluntarios asignados a un proyecto.
+    
+    ## Permisos
+    - ✅ Admin: puede ver asignaciones de cualquier proyecto
+    - ✅ Voluntario: puede ver asignaciones del proyecto (para conocer al equipo)
     
     ## 🎯 Propósito
     Muestra todos los voluntarios trabajando en un proyecto específico,
@@ -195,24 +224,12 @@ def get_project_assignments(
                 "id": 3,
                 "name": "Jardinería"
             }
-        },
-        {
-            "id": 2,
-            "status": "pending",
-            "created_at": "2024-03-02T11:00:00",
-            "volunteer": {
-                "id": 87,
-                "user_id": 456,
-                "user_name": "John Doe"
-            },
-            "matched_skill": {
-                "id": 5,
-                "name": "Liderazgo"
-            }
         }
     ]
     ```
     """
+    # Todos pueden ver las asignaciones de un proyecto
+    # (útil para que voluntarios sepan con quién trabajarán)
     return AssignmentController.get_assignments_by_project(db, project_id)
 
 
@@ -224,11 +241,20 @@ def get_project_assignments(
 def update_assignment_status(
     assignment_id: int,
     status_update: assignment_schema.AssignmentUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Modifica el estado de una asignación para seguimiento del ciclo de vida.
     Actualiza automáticamente el estado del proyecto asociado.
+    
+    ## Permisos
+    - ✅ Admin: puede actualizar cualquier asignación a cualquier estado
+    - ✅ Voluntario: puede actualizar solo SUS asignaciones y solo a estados específicos:
+        - PENDING → ACCEPTED (aceptar la asignación)
+        - PENDING → REJECTED (rechazar la asignación)
+        - ACCEPTED → COMPLETED (completar la asignación)
+    - ❌ Voluntario NO puede: cambiar asignaciones de otros, ni usar estados no permitidos
     
     ## 📋 Parámetros
     - **assignment_id**: Identificador único de la asignación
@@ -250,4 +276,70 @@ def update_assignment_status(
     }
     ```
     """
+    # Obtener la asignación para validar permisos
+    from models.assignment_model import Assignment
+    from models.volunteers_model import Volunteer
+    
+    assignment = db.query(Assignment).filter(Assignment.id == assignment_id).first()
+    if not assignment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found"
+        )
+    
+    # Obtener el volunteer_skill para validar el dueño
+    from models.volunteer_skill_model import volunteer_skills
+    # 1. Obtener la fila de la tabla (Core)
+    # Usamos .c (columns) para acceder a los campos de la tabla
+    stmt = select(volunteer_skills).where(
+        volunteer_skills.c.id == assignment.volunteer_skill_id
+    )
+    volunteer_skill = db.execute(stmt).first()
+
+    if not volunteer_skill:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Volunteer skill not found"
+        )
+
+    # 2. Obtener el voluntario (ORM)
+    # Nota: volunteer_skill actúa como un Row, así que accedemos por nombre de columna
+    volunteer = db.query(Volunteer).filter(
+        Volunteer.id == volunteer_skill.volunteer_id
+    ).first()
+
+    # --- El resto de tu lógica de permisos se mantiene igual ---
+
+    is_admin = current_user.role_id == ROLE_ADMIN
+    is_owner = volunteer and volunteer.user_id == current_user.id
+
+    if not is_admin and not is_owner:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access Denied: You can only update your own assignments"
+        )
+    
+    # Si es voluntario (no admin), validar transiciones permitidas
+    if not is_admin:
+        current_status = assignment.status
+        new_status = status_update.status
+        
+        # Definir transiciones permitidas para voluntarios
+        allowed_transitions = {
+            AssignmentStatus.PENDING: [AssignmentStatus.ACCEPTED, AssignmentStatus.REJECTED],
+            AssignmentStatus.ACCEPTED: [AssignmentStatus.COMPLETED]
+        }
+        
+        if current_status not in allowed_transitions:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Cannot change assignment from status '{current_status}'"
+            )
+        
+        if new_status not in allowed_transitions[current_status]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Volunteers cannot change status from '{current_status}' to '{new_status}'"
+            )
+    
     return AssignmentController.update_status(db, assignment_id, status_update.status)
