@@ -5,22 +5,26 @@ from schemas import project_schema as schema
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from config.logging_config import get_logger
-
+from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination import Page
 from models.project_model import Project
 from models.project_skill_model import project_skills
 from models.skill_model import Skill
 from controllers.skill_controller import get_skill
+from models.volunteer_skill_model import volunteer_skills
+from models.volunteers_model import Volunteer
+from models.users_model import User
 
-logger = get_logger("project")
+logger = get_logger("Project")
 
 class ProjectController:
 
     #READ ALL PROJECTS
     @staticmethod
-    async def get_projects(db: Session, skip: int = 0, limit: int = 100) -> list[schema.ProjectOut]:
+    async def get_projects(db: Session) -> Page[schema.ProjectOut]:
         logger.info(f"Trying to get all projects")
-        projects = db.query(Project).filter(Project.deleted_at.is_(None)).offset(skip).limit(limit).all()
-        return [schema.ProjectOut.model_validate(project) for project in projects]
+        
+        return paginate(db.query(Project).filter(Project.deleted_at.is_(None)))
     
     
     #READ ONE PROJECT
@@ -273,5 +277,72 @@ class ProjectController:
             db.rollback()
             logger.error(f"Error soft-deleting all skills: {e}")
             raise HTTPException(status_code=500, detail="Error soft-deleting all skills")   #Internal server error
+
+
+#Matching -> No asigna
+
+    @staticmethod
+    def get_matching_volunteers(db: Session, project_id: int):
+        logger.info(f"Getting matching volunteers for project {project_id}")
+
+        #Project exist
+        project = db.query(Project).filter(Project.id == project_id,Project.deleted_at.is_(None)).first()
+
+        if not project:
+            logger.warning(f"Project {project_id} not found")
+            raise HTTPException(status_code=404, detail="Project not found")    #Not found
+
+        #Get Skills for projects
+        project_skill_rows = db.execute(
+            project_skills.select().where(
+                project_skills.c.project_id == project_id,
+                project_skills.c.deleted_at.is_(None)
+            )
+        ).fetchall()
+
+        if not project_skill_rows:
+            return []
+
+        project_skill_ids = [ps.skill_id for ps in project_skill_rows]
+
+        # Search volunteer_skills matching whit User
+        rows = db.execute(
+                    select(
+                        volunteer_skills.c.volunteer_id,
+                        User.name.label("volunteer_name"),
+                        Skill.id.label("skill_id"),
+                        Skill.name.label("skill_name")
+                    )
+                    .select_from(volunteer_skills)
+                    .join(Volunteer, Volunteer.id == volunteer_skills.c.volunteer_id)
+                    .join(User, User.id == Volunteer.user_id) 
+                    .join(Skill, Skill.id == volunteer_skills.c.skill_id)
+                    .where(
+                        volunteer_skills.c.skill_id.in_(project_skill_ids),
+                        volunteer_skills.c.deleted_at.is_(None),
+                        Volunteer.deleted_at.is_(None),
+                        User.deleted_at.is_(None)
+                    )
+                ).fetchall()
+
+        # 4. Agrupar
+        matches = {}
+        
+        for row in rows:
+                vid = row.volunteer_id
+
+                if vid not in matches:
+                    matches[vid] = {
+                        "volunteer_id": vid,
+                        "volunteer_name": row.volunteer_name,
+                        "matched_skills": []
+                    }
+
+                matches[vid]["matched_skills"].append({
+                    "id": row.skill_id,
+                    "name": row.skill_name
+                })
+
+        return list(matches.values())
 
 

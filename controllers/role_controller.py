@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from config.logging_config import get_logger
 
 
-logger = get_logger("roles")
+logger = get_logger("Roles")
 
 
 class RoleController:

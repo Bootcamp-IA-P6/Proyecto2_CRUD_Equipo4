@@ -4,16 +4,18 @@ from fastapi import HTTPException
 from datetime import datetime
 from config.logging_config import get_logger
 from sqlalchemy import select, update, join, and_
+from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination import Page
 
 from models.volunteers_model import Volunteer
 from models.users_model import User
 from models.skill_model import Skill
 from models.volunteer_skill_model import volunteer_skills
-from schemas.volunteer_schema import VolunteerCreate, VolunteerUpdate
+from schemas.volunteer_schema import VolunteerCreate, VolunteerUpdate, VolunteerOut
 from domain.volunteer_enum import VolunteerStatus
 
 
-logger = get_logger("volunteers") #logging
+logger = get_logger("Volunteers") #logging
 
 #Create Volunteer
 def create_volunteer(db: Session, data: VolunteerCreate):
@@ -45,9 +47,10 @@ def create_volunteer(db: Session, data: VolunteerCreate):
         raise HTTPException(status_code=500, detail="Internal server error")    #Internal server Error
 
 #Get all Volunteers
-def get_volunteers(db: Session):
+def get_volunteers(db: Session) -> Page[VolunteerOut]:
     logger.info(f"Getting volunteers list")
-    return db.query(Volunteer).all()
+    
+    return paginate(db.query(Volunteer).filter(Volunteer.deleted_at.is_(None)))
 
 #Get Volunteer by ID
 def get_volunteer(db: Session, id: int):
@@ -119,10 +122,28 @@ def add_skill_to_volunteer(db: Session, volunteer_id: int, skill_id: int):
     if not skill:
         logger.warning(f"Skill with id {skill_id} not found")
         raise HTTPException(404, "Skill not found")   #Not found
-    
-    if skill in volunteer.skills:
-        logger.warning(f"Volunteer already has this skill")
-        raise HTTPException(409, "Volunteer already has this skill")    #Conflict
+
+    relation = db.execute(select(volunteer_skills).where(
+        volunteer_skills.c.volunteer_id == volunteer_id,
+        volunteer_skills.c.skill_id == skill_id
+    )).first()
+
+
+    if relation:
+        if relation.deleted_at is not None:
+            db.execute(update(volunteer_skills)
+                       .where(
+                           volunteer_skills.c.volunteer_id == volunteer_id,
+                           volunteer_skills.c.skill_id == skill_id
+                       ).values(deleted_at = None)
+            )
+            db.commit()
+            db.refresh(volunteer)
+            logger.info(f"Skill {skill_id} reactivated for volunteer {volunteer_id}")
+            return volunteer
+        else:
+            logger.warning(f"Volunteer already has this skill")
+            raise HTTPException(409, "Volunteer already has this skill")    #Conflict
     
     volunteer.skills.append(skill)
     db.commit()
@@ -137,7 +158,8 @@ def remove_skill_from_volunteer(db: Session, volunteer_id: int, skill_id: int):
 
     stmt = select(volunteer_skills).where(
                     volunteer_skills.c.volunteer_id == volunteer_id,
-                    volunteer_skills.c.skill_id == skill_id)
+                    volunteer_skills.c.skill_id == skill_id,
+                    volunteer_skills.c.deleted_at.is_(None))
 
     skill = db.execute(stmt).first()
 
@@ -157,7 +179,7 @@ def remove_skill_from_volunteer(db: Session, volunteer_id: int, skill_id: int):
         db.execute(upd)
         db.commit()
         logger.info(f"Skill {skill_id} soft-deleted for volunteer {volunteer_id}")
-        return skill
+        return {"detail": "Skill removed from volunteer"}
     
     except Exception as e:
         db.rollback()
