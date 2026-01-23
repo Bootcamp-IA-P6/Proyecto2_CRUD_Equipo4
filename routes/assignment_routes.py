@@ -12,8 +12,13 @@ assignment_router = APIRouter(
     tags=["Assignments"]
 )
 
-#CREATE - Asignar voluntario a proyecto
-@assignment_router.post("/", status_code=status.HTTP_201_CREATED, response_model=assignment_schema.AssignmentOut)
+
+# CREATE - Asignar voluntario a proyecto
+@assignment_router.post(
+    "/", 
+    status_code=status.HTTP_201_CREATED, 
+    response_model=assignment_schema.AssignmentCreateResponse
+)
 def create_assignment(
     data: assignment_schema.AssignmentCreate,
     db: Session = Depends(get_db)
@@ -22,67 +27,135 @@ def create_assignment(
     Asignar un voluntario a un proyecto
     
     ## 🎯 Propósito
-    Crea una nueva asignación vinculando voluntario con proyecto.
-    Valida compatibilidad de habilidades y disponibilidad.
+    Crea una nueva asignación vinculando un volunteer_skill con un project_skill.
+    Valida que ambos skills sean la misma (match de habilidades).
     
     ## 📋 Parámetros
     - **data**: Objeto AssignmentCreate con información de la asignación
-      - volunteer_id: ID del voluntario a asignar (requerido)
-      - project_id: ID del proyecto destino (requerido)
-      - start_date: Fecha de inicio de la asignación
-      - expected_hours: Horas estimadas de compromiso
-      - role_description: Descripción específica del rol en el proyecto
+    - project_skill_id: ID de la relación proyecto-skill (requerido)
+    - volunteer_skill_id: ID de la relación voluntario-skill (requerido)
+    - status: Estado inicial (default: PENDING)
     
-    ## ✅ Respuesta
-    Objeto AssignmentOut con información completa de la asignación (Código 201).
+    ## ✅ Respuesta ENRIQUECIDA
+    Objeto AssignmentCreateResponse con información completa:
+    - Datos básicos del assignment
+    - Información del proyecto (id, name, description)
+    - Información del voluntario (id, user_id)
+    - Skill que hizo match (id, name)
     
     ## ⚠️ Errores comunes
-    - **400**: Bad Request - Voluntario no disponible o proyecto completo
-    - **404**: Not Found - Voluntario o proyecto no existen
-    - **422**: Unprocessable Entity - Incompatibilidad de habilidades
+    - **400**: Bad Request - Las skills no coinciden
+    - **404**: Not Found - project_skill o volunteer_skill no existen
+    - **409**: Conflict - Ya existe una asignación activa para esta combinación
     
     ## 📝 Ejemplo de uso
     ```json
     POST /assignments/
     {
-        "volunteer_id": 42,
-        "project_id": 15,
-        "start_date": "2024-03-01",
-        "expected_hours": 40,
-        "role_description": "Coordinador de equipo de plantación"
+        "project_skill_id": 15,
+        "volunteer_skill_id": 42,
+        "status": "pending"
     }
     ```
     
-    ## 🔗 Relaciones
-    Conecta voluntarios con proyectos, generando seguimiento y métricas de impacto.
+    ## 📤 Ejemplo de respuesta
+    ```json
+    {
+        "id": 1,
+        "project_skill_id": 15,
+        "volunteer_skill_id": 42,
+        "status": "pending",
+        "created_at": "2024-03-01T10:30:00",
+        "updated_at": "2024-03-01T10:30:00",
+        "volunteer": {
+            "id": 42,
+            "user_id": 123
+        },
+        "project": {
+            "id": 5,
+            "name": "Reforestación Urbana",
+            "description": "Plantación de árboles nativos"
+        },
+        "matched_skill": {
+            "id": 3,
+            "name": "Jardinería"
+        }
+    }
+    ```
     """
     return AssignmentController.assign_volunteer(db, data)
 
 
 # READ - Obtener asignaciones de un voluntario
-@assignment_router.get("/volunteer/{volunteer_id}", response_model=List[assignment_schema.AssignmentOut])
+@assignment_router.get(
+    "/volunteer/{volunteer_id}", 
+    response_model=List[assignment_schema.AssignmentByVolunteer]
+)
 def get_volunteer_assignments(
     volunteer_id: int,
     db: Session = Depends(get_db)
 ):
     """
-    Recupera el historial completo de asignaciones de un voluntario específico.
-    Utilizado para gestión de perfil y seguimiento de participación.
+    Recupera todas las asignaciones de un voluntario específico.
     
-    ## Parámetros
+    ## 🎯 Propósito
+    Muestra todos los proyectos en los que está trabajando un voluntario,
+    junto con las skills que está utilizando en cada proyecto.
+    
+    ## 📋 Parámetros
     - **volunteer_id**: Identificador único del voluntario
     
-    ## Respuesta
-    Lista de objetos AssignmentOut con historial de asignaciones del voluntario.
+    ## ✅ Respuesta
+    Lista de objetos AssignmentByVolunteer, cada uno con:
+    - id, status, created_at del assignment
+    - Información del proyecto (id, name, description)
+    - Skill utilizada (id, name)
     
     ## 📝 Ejemplo de uso
     `GET /assignments/volunteer/42`
+    
+    ## 📤 Ejemplo de respuesta
+    ```json
+    [
+        {
+            "id": 1,
+            "status": "accepted",
+            "created_at": "2024-03-01T10:30:00",
+            "project": {
+                "id": 5,
+                "name": "Reforestación Urbana",
+                "description": "Plantación de árboles"
+            },
+            "matched_skill": {
+                "id": 3,
+                "name": "Jardinería"
+            }
+        },
+        {
+            "id": 3,
+            "status": "completed",
+            "created_at": "2024-02-15T09:00:00",
+            "project": {
+                "id": 8,
+                "name": "Limpieza de Playas",
+                "description": "Recolección de residuos"
+            },
+            "matched_skill": {
+                "id": 7,
+                "name": "Trabajo en Equipo"
+            }
+        }
+    ]
+    ```
     """
     return AssignmentController.get_assignments_by_volunteer(db, volunteer_id)
 
 
 # READ - Obtener asignaciones de un proyecto 
-@assignment_router.get("/project/{project_id}", response_model=List[assignment_schema.AssignmentOut])
+@assignment_router.get(
+    "/project/{project_id}", 
+    response_model=List[assignment_schema.AssignmentByProject]
+)
 def get_project_assignments(
     project_id: int,
     db: Session = Depends(get_db)
@@ -90,22 +163,64 @@ def get_project_assignments(
     """
     Recupera el equipo completo de voluntarios asignados a un proyecto.
     
-    ## Parámetros
+    ## 🎯 Propósito
+    Muestra todos los voluntarios trabajando en un proyecto específico,
+    junto con las skills que cada uno está aportando.
+    
+    ## 📋 Parámetros
     - **project_id**: Identificador único del proyecto
     
-    ## Respuesta
-    Lista de objetos AssignmentOut con equipo del proyecto.
-    
+    ## ✅ Respuesta
+    Lista de objetos AssignmentByProject, cada uno con:
+    - id, status, created_at del assignment
+    - Información del voluntario (id, user_id)
+    - Skill aportada (id, name)
     
     ## 📝 Ejemplo de uso
-    `GET /assignments/project/15`
+    `GET /assignments/project/5`
     
+    ## 📤 Ejemplo de respuesta
+    ```json
+    [
+        {
+            "id": 1,
+            "status": "accepted",
+            "created_at": "2024-03-01T10:30:00",
+            "volunteer": {
+                "id": 42,
+                "user_id": 123,
+                "user_name": "John Doe"
+            },
+            "matched_skill": {
+                "id": 3,
+                "name": "Jardinería"
+            }
+        },
+        {
+            "id": 2,
+            "status": "pending",
+            "created_at": "2024-03-02T11:00:00",
+            "volunteer": {
+                "id": 87,
+                "user_id": 456,
+                "user_name": "John Doe"
+            },
+            "matched_skill": {
+                "id": 5,
+                "name": "Liderazgo"
+            }
+        }
+    ]
+    ```
     """
     return AssignmentController.get_assignments_by_project(db, project_id)
 
 
 # UPDATE - Actualizar estado de asignación
-@assignment_router.patch("/{assignment_id}/status", response_model=assignment_schema.AssignmentOut)
+@assignment_router.patch(
+    "/{assignment_id}/status", 
+    response_model=assignment_schema.AssignmentOut
+)
 def update_assignment_status(
     assignment_id: int,
     status_update: assignment_schema.AssignmentUpdate,
@@ -115,33 +230,24 @@ def update_assignment_status(
     Modifica el estado de una asignación para seguimiento del ciclo de vida.
     Actualiza automáticamente el estado del proyecto asociado.
     
-    ## Parámetros
+    ## 📋 Parámetros
     - **assignment_id**: Identificador único de la asignación
     - **status_update**: Objeto con nuevo estado
     
-    ## Respuesta
+    ## ✅ Respuesta
     Objeto AssignmentOut con estado actualizado.
 
+    ## 🔄 Lógica de actualización automática del proyecto
+    - `accepted` → Proyecto pasa a 'assigned'
+    - `rejected` → Si no quedan asignaciones activas, proyecto vuelve a 'pending'
+    - `completed` → Si todas las asignaciones están completadas, proyecto pasa a 'completed'
     
     ## 📝 Ejemplo de uso
     ```json
     PATCH /assignments/123/status
     {
-        "status": "completed"
+        "status": "accepted"
     }
     ```
     """
     return AssignmentController.update_status(db, assignment_id, status_update.status)
-
-
-# # DELETE - Eliminar asignación (soft delete)
-# @asignment_router.delete("/{assignment_id}", status_code=status.HTTP_204_NO_CONTENT)
-# def delete_assignment(
-#     assignment_id: int,
-#     db: Session = Depends(get_db)
-# ):
-#     """
-#     Elimina una asignación (soft delete).
-#     """
-#     AssignmentController.delete_assignment(db, assignment_id)
-#     return
