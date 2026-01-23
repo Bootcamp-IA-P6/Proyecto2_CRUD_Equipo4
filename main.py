@@ -8,8 +8,7 @@ from config.logging_config import get_logger
 
 
 logger = get_logger("app")
-description=
-    """
+description = """
     API para gestión completa de sistema de voluntarios.
     ## Características principales:
     * Gestión de usuarios y voluntarios
