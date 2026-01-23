@@ -3,19 +3,19 @@ import textwrap
 from fastapi import FastAPI
 from fastapi_pagination import add_pagination
 from database.database import Base, engine
-from routes import volunteer_routes, users_routes, project_routes, category_routes, role_routes, skill_routes, assignment_routes, export
+from routes import volunteer_routes, users_routes, project_routes, category_routes, role_routes, skill_routes, assignment_routes, export, auth_routes
 from config.logging_config import get_logger
 
 
 logger = get_logger("app")
-description="""
+description=
+    """
     API para gestión completa de sistema de voluntarios.
     ## Características principales:
     * Gestión de usuarios y voluntarios
     * Administración de proyectos y categorías  
     * Sistema de habilidades y asignaciones a proyectos
     * Autenticación y seguridad
-  
     """
 
 #print("MODELOS REGISTRADOS:", Base.metadata.tables.keys())
@@ -45,6 +45,7 @@ app.include_router(role_routes.role_router)
 app.include_router(category_routes.router)
 app.include_router(skill_routes.skill_router)
 app.include_router(assignment_routes.assignment_router)
+app.include_router(auth_routes.auth_router)
 app.include_router(export.router)
 
 
