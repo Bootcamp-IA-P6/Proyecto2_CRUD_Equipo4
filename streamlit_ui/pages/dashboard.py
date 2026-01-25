@@ -23,9 +23,9 @@ def show_admin_dashboard():
     
     # Obtener datos principales
     try:
-        volunteers_response = api_client.get_volunteers(size=1000)
-        projects_response = api_client.get_projects(size=1000)
-        skills_response = api_client.get_skills(size=1000)
+        volunteers_response = api_client.get_volunteers(size=100)
+        projects_response = api_client.get_projects(size=100)
+        skills_response = api_client.get_skills(size=100)
         
         volunteers = volunteers_response.get('items', [])
         projects = projects_response.get('items', [])
@@ -66,11 +66,12 @@ def show_admin_dashboard():
             # Proyectos por vencer
             today = datetime.now()
             upcoming_deadlines = [
-                p for p in projects 
-                if datetime.fromisoformat(p.get('deadline').replace('Z', '+00:00')) > today and
-                   datetime.fromisoformat(p.get('deadline').replace('Z', '+00:00')) <= today + timedelta(days=7)
-            ]
-            st.metric("⏰ Próximos vencimientos", len(upcoming_deadlines))
+            p for p in projects 
+            if p.get('end_date') and
+            datetime.fromisoformat(p.get('end_date').replace('Z', '+00:00')) > today and
+               datetime.fromisoformat(p.get('end_date').replace('Z', '+00:00')) <= today + timedelta(days=7)
+        ]
+        st.metric("⏰ Próximos vencimientos", len(upcoming_deadlines))
         
         st.markdown("---")
         
@@ -185,18 +186,26 @@ def show_volunteer_dashboard():
     try:
         # Obtener datos del voluntario actual
         # Esto requeriría un endpoint para obtener volunteer por user_id
-        volunteers_response = api_client.get_volunteers(size=1000)
+        volunteers_response = api_client.get_volunteers(size=100)
         volunteers = volunteers_response.get('items', [])
         
         # Encontrar voluntario correspondiente al usuario actual
         my_volunteer = None
+        volunteer_id = None
+        
+        # Primero intentar obtener directamente por user_id si hubiera endpoint
+        # Si no, buscar en la lista
         for volunteer in volunteers:
             if volunteer.get('user_id') == user['id']:
                 my_volunteer = volunteer
+                volunteer_id = volunteer['id']
                 break
         
         if not my_volunteer:
             st.warning("No se encontró tu perfil de voluntario. Contacta al administrador.")
+            if st.button("Crear Perfil de Voluntario"):
+                st.session_state.action = "create_volunteer"
+                st.rerun()
             return
         
         # Información personal
@@ -278,7 +287,7 @@ def show_volunteer_dashboard():
         if skills:
             st.markdown("## 🎯 Proyectos Recomendados")
             
-            projects_response = api_client.get_projects(size=1000)
+            projects_response = api_client.get_projects(size=100)
             all_projects = projects_response.get('items', [])
             
             # Filtrar proyectos que matchean mis skills

@@ -1,5 +1,6 @@
 import streamlit as st
 from typing import Dict, List, Any, Optional
+from components.api_client import api_client
 from datetime import datetime, date
 
 def user_form(user_data: Optional[Dict] = None) -> Dict:
@@ -44,19 +45,21 @@ def user_form(user_data: Optional[Dict] = None) -> Dict:
                 st.error("Las contraseñas no coinciden")
         
         # Role selection
-        from components.api_client import api_client
         roles_response = api_client.get_roles()
-        roles = roles_response.get('items', [])
+        roles = roles_response.get('items', []) if isinstance(roles_response, dict) else []
         
         if roles:
             role_options = {role['name']: role['id'] for role in roles}
-            selected_role = st.selectbox(
+            selected_role_name = st.selectbox(
                 "Rol *",
                 options=list(role_options.keys()),
-                index=list(role_options.keys()).index('volunteer') if not user_data else 
-                       next((i for k, v in role_options.items() if v == user_data.get('role_id')), 0),
+                index=0,  # Default primer rol
                 key="user_role"
             )
+            selected_role_id = role_options[selected_role_name]
+        else:
+            st.error("No hay roles disponibles. Contacte al administrador.")
+            return None
         
         submitted = st.form_submit_button("💾 Guardar Usuario", type="primary")
         
@@ -66,7 +69,7 @@ def user_form(user_data: Optional[Dict] = None) -> Dict:
                 'email': email,
                 'phone': phone,
                 'birth_date': birth_date.isoformat(),
-                'role_id': role_options[selected_role]
+                'role_id': selected_role_id
             }
             
             if not user_data and password:
@@ -84,12 +87,10 @@ def volunteer_form(volunteer_data: Optional[Dict] = None) -> Dict:
         
         # User selection (si es creación)
         if not volunteer_data:
-            from components.api_client import api_client
             users_response = api_client.get_users()
-            users = users_response.get('items', [])
+            users = users_response.get('items', []) if isinstance(users_response, dict) else []
             
             # Filtrar usuarios que no son voluntarios aún
-            # (Esto requeriría un endpoint específico o lógica adicional)
             user_options = {f"{u['name']} ({u['email']})": u['id'] for u in users}
             
             selected_user = st.selectbox(
@@ -97,6 +98,32 @@ def volunteer_form(volunteer_data: Optional[Dict] = None) -> Dict:
                 options=list(user_options.keys()),
                 key="volunteer_user"
             )
+        
+        # Campos adicionales del voluntario
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            availability = st.text_input(
+                "Disponibilidad",
+                value=volunteer_data.get('availability', '') if volunteer_data else '',
+                key="volunteer_availability",
+                help="Ej: Fin de semana, Tardes, etc."
+            )
+        
+        with col2:
+            experience = st.text_input(
+                "Experiencia",
+                value=volunteer_data.get('experience', '') if volunteer_data else '',
+                key="volunteer_experience",
+                help="Describe tu experiencia relevante"
+            )
+        
+        motivation = st.text_area(
+            "Motivación",
+            value=volunteer_data.get('motivation', '') if volunteer_data else '',
+            key="volunteer_motivation",
+            help="¿Por qué quieres ser voluntario?"
+        )
         
         # Status
         status_options = ["active", "inactive", "suspended"]
@@ -111,6 +138,9 @@ def volunteer_form(volunteer_data: Optional[Dict] = None) -> Dict:
         
         if submitted:
             form_data = {
+                'availability': availability,
+                'experience': experience,
+                'motivation': motivation,
                 'status': status
             }
             
@@ -136,48 +166,50 @@ def project_form(project_data: Optional[Dict] = None) -> Dict:
                 key="project_name"
             )
             
-            deadline = st.date_input(
-                "Fecha Límite *",
-                value=datetime.strptime(project_data.get('deadline', '2024-12-31'), 
-                                      '%Y-%m-%d').date() if project_data else date(2024, 12, 31),
-                key="project_deadline"
+            # Start date y end date en lugar de deadline
+            start_date = st.date_input(
+                "Fecha de Inicio *",
+                value=datetime.strptime(project_data.get('start_date', '2024-01-01'), 
+                                      '%Y-%m-%d').date() if project_data else date.today(),
+                key="project_start_date"
+            )
+            
+            end_date = st.date_input(
+                "Fecha de Fin *",
+                value=datetime.strptime(project_data.get('end_date', '2024-12-31'), 
+                                      '%Y-%m-%d').date() if project_data else date.today(),
+                key="project_end_date"
             )
             
             # Status
-            status_options = ["not_assigned", "assigned", "completed"]
+            status_options = ["planning", "in_progress", "completed", "cancelled"]
             status = st.selectbox(
                 "Estado",
                 options=status_options,
-                index=status_options.index(project_data.get('status', 'not_assigned')) if project_data else 0,
+                index=status_options.index(project_data.get('status', 'planning')) if project_data else 0,
                 key="project_status"
             )
         
         with col2:
-            # Priority
-            priority_options = ["high", "medium", "low"]
-            priority = st.selectbox(
-                "Prioridad",
-                options=priority_options,
-                index=priority_options.index(project_data.get('priority', 'medium')) if project_data else 0,
-                key="project_priority"
-            )
-            
             # Category
-            from components.api_client import api_client
             categories_response = api_client.get_categories()
-            categories = categories_response.get('items', [])
+            categories = categories_response.get('items', []) if isinstance(categories_response, dict) else []
             
             if categories:
                 category_options = {cat['name']: cat['id'] for cat in categories}
-                selected_category = st.selectbox(
+                selected_category_name = st.selectbox(
                     "Categoría *",
                     options=list(category_options.keys()),
-                    index=list(category_options.keys()).index(project_data.get('category', {}).get('name', '')) if project_data and project_data.get('category') else 0,
+                    index=0,
                     key="project_category"
                 )
+                category_id = category_options[selected_category_name]
+            else:
+                st.error("No hay categorías disponibles")
+                return None
         
         description = st.text_area(
-            "Descripción",
+            "Descripción *",
             value=project_data.get('description', '') if project_data else '',
             key="project_description"
         )
@@ -188,10 +220,10 @@ def project_form(project_data: Optional[Dict] = None) -> Dict:
             form_data = {
                 'name': name,
                 'description': description,
-                'deadline': deadline.isoformat(),
+                'start_date': start_date.isoformat(),
+                'end_date': end_date.isoformat(),
                 'status': status,
-                'priority': priority,
-                'category_id': category_options[selected_category]
+                'category_id': category_id
             }
             
             return form_data

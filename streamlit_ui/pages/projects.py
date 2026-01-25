@@ -85,7 +85,7 @@ def show_admin_projects():
         
         # Obtener categorías
         try:
-            categories_response = api_client.get_categories(size=1000)
+            categories_response = api_client.get_categories(size=100)
             categories = categories_response.get('items', [])
             category_names = ["Todas"] + [c.get('name', '') for c in categories]
             category_filter = st.selectbox(
@@ -140,7 +140,7 @@ def show_volunteer_projects():
     user = auth.get_current_user()
     
     # Obtener voluntario actual
-    volunteers_response = api_client.get_volunteers(size=1000)
+    volunteers_response = api_client.get_volunteers(size=100)
     volunteers = volunteers_response.get('items', [])
     
     my_volunteer = None
@@ -224,7 +224,7 @@ def show_recommended_projects(volunteer: Dict):
         my_skill_ids = [s['id'] for s in my_skills]
         
         # Obtener todos los proyectos activos
-        projects_response = api_client.get_projects(size=1000)
+        projects_response = api_client.get_projects(size=100)
         projects = projects_response.get('items', [])
         
         # Filtrar proyectos que matchean skills y están activos
@@ -484,7 +484,7 @@ def show_project_details():
             st.rerun()
 
 def show_project_assignment():
-    """Muestra volunteers que matchean con el proyecto"""
+    """Muestra volunteers que matchean con el proyecto y permite asignar"""
     project = st.session_state.get('assign_project')
     
     st.markdown(f"## 👥 Asignar Voluntarios a: {project.get('name', 'N/A')}")
@@ -492,7 +492,7 @@ def show_project_assignment():
     try:
         # Obtener voluntarios que matchean
         matching_response = api_client.get_project_matching_volunteers(project['id'])
-        matching_volunteers = matching_response.get('items', [])
+        matching_volunteers = matching_response if isinstance(matching_response, list) else []
         
         if matching_volunteers:
             st.write(f"**Se encontraron {len(matching_volunteers)} voluntarios con skills compatibles:**")
@@ -504,41 +504,60 @@ def show_project_assignment():
                     st.write(f"**🎯 Estado:** {status_badge(volunteer.get('status'))}")
                     
                     # Skills que matchean
-                    # (Esto requeriría lógica específica para mostrar qué skills matchean)
-                    
-                    # Botones de asignación por skill
-                    project_skills = project.get('skills', [])
-                    volunteer_skills = volunteer.get('skills', [])
-                    
-                    if project_skills and volunteer_skills:
-                        st.write("**Asignar por Skill:**")
-                        
-                        for project_skill in project_skills:
-                            # Encontrar skills del voluntario que matchean con este skill del proyecto
-                            matching_volunteer_skills = [
-                                vs for vs in volunteer_skills 
-                                if vs.get('name', '').lower() == project_skill.get('name', '').lower()
-                            ]
+                    matched_skills = volunteer.get('matched_skills', [])
+                    if matched_skills:
+                        st.write("**🛠️ Skills compatibles:**")
+                        for skill in matched_skills:
+                            st.write(f"• {skill.get('name', 'N/A')}")
                             
-                            for vs in matching_volunteer_skills:
-                                col1, col2 = st.columns([3, 1])
-                                with col1:
-                                    st.write(f"🛠️ {project_skill.get('name', 'N/A')}")
-                                with col2:
-                                    if st.button("Asignar", key=f"assign_{project['id']}_{volunteer['id']}_{project_skill['id']}"):
-                                        # Crear asignación
+                            # Botón de asignación para cada skill específica
+                            if st.button(f"Asignar con {skill.get('name')}", 
+                                       key=f"assign_{project['id']}_{volunteer['id']}_{skill['id']}"):
+                                # Obtener IDs reales de las tablas intermedias
+                                try:
+                                    # Necesitamos obtener el volunteer_skill_id y project_skill_id reales
+                                    # Esto requiere llamadas adicionales a la API
+                                    
+                                    # Obtener skills del voluntario para encontrar el ID correcto
+                                    volunteer_skills_response = api_client.get_volunteer_skills(volunteer['id'])
+                                    volunteer_skills = volunteer_skills_response.get('skills', [])
+                                    
+                                    # Encontrar el volunteer_skill_id que corresponde a este skill
+                                    volunteer_skill_id = None
+                                    for vs in volunteer_skills:
+                                        if vs.get('id') == skill['id']:
+                                            # Aquí necesitamos el ID de la tabla volunteer_skills, no del skill
+                                            # Esto requeriría un endpoint adicional o modificar el actual
+                                            volunteer_skill_id = vs.get('volunteer_skill_id')
+                                            break
+                                    
+                                    # Obtener skills del proyecto para encontrar el ID correcto
+                                    project_skills_response = api_client.get_project_skills(project['id'])
+                                    project_skills = project_skills_response.get('skills', [])
+                                    
+                                    # Encontrar el project_skill_id que corresponde a este skill
+                                    project_skill_id = None
+                                    for ps in project_skills:
+                                        if ps.get('id') == skill['id']:
+                                            # Aquí necesitamos el ID de la tabla project_skills
+                                            project_skill_id = ps.get('project_skill_id')
+                                            break
+                                    
+                                    if volunteer_skill_id and project_skill_id:
                                         assignment_data = {
-                                            'project_skill_id': f"{project['id']}_{project_skill['id']}",  # Formato假设
-                                            'volunteer_skill_id': f"{volunteer['id']}_{vs['id']}",    # Formato假设
+                                            'volunteer_skill_id': volunteer_skill_id,
+                                            'project_skill_id': project_skill_id,
                                             'status': 'pending'
                                         }
                                         
-                                        try:
-                                            api_client.create_assignment(assignment_data)
-                                            st.success("¡Asignación creada exitosamente!")
-                                            st.rerun()
-                                        except Exception as e:
-                                            st.error(f"Error al crear asignación: {e}")
+                                        api_client.create_assignment(assignment_data)
+                                        st.success(f"¡Asignación creada con skill {skill.get('name')}!")
+                                        st.rerun()
+                                    else:
+                                        st.error("No se pudieron obtener los IDs de las skills. Contacte al administrador.")
+                                        
+                                except Exception as e:
+                                    st.error(f"Error al crear asignación: {e}")
         else:
             st.warning("No se encontraron voluntarios con skills compatibles para este proyecto")
         
@@ -548,7 +567,8 @@ def show_project_assignment():
     if st.button("🔙 Volver"):
         st.session_state.assign_project = None
         st.rerun()
-
+        
+        
 def show_add_skill_to_project():
     """Añade skills a un proyecto"""
     project_id = st.session_state.get('add_skill_to_project')
@@ -557,7 +577,7 @@ def show_add_skill_to_project():
     
     try:
         # Obtener skills disponibles
-        skills_response = api_client.get_skills(size=1000)
+        skills_response = api_client.get_skills(size=100)
         all_skills = skills_response.get('items', [])
         
         # Obtener skills actuales del proyecto
@@ -600,8 +620,8 @@ def show_skill_matching():
     
     try:
         # Obtener todos los datos
-        volunteers_response = api_client.get_volunteers(size=1000)
-        projects_response = api_client.get_projects(size=1000)
+        volunteers_response = api_client.get_volunteers(size=100)
+        projects_response = api_client.get_projects(size=100)
         
         volunteers = volunteers_response.get('items', [])
         projects = projects_response.get('items', [])
@@ -681,7 +701,7 @@ def show_project_statistics():
     st.markdown("## 📊 Estadísticas de Proyectos")
     
     try:
-        projects_response = api_client.get_projects(size=1000)
+        projects_response = api_client.get_projects(size=100)
         projects = projects_response.get('items', [])
         
         if not projects:
@@ -775,7 +795,7 @@ def show_project_statistics():
 def show_project_list(status_filter: str, priority_filter: str, category_filter: str, search_term: str):
     """Muestra listado filtrado de proyectos"""
     try:
-        projects_response = api_client.get_projects(size=1000)
+        projects_response = api_client.get_projects(size=100)
         projects = projects_response.get('items', [])
         
         # Aplicar filtros

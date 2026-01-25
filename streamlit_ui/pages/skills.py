@@ -146,8 +146,8 @@ def show_skill_details():
     
     try:
         # Obtener datos de uso
-        volunteers_response = api_client.get_volunteers(size=1000)
-        projects_response = api_client.get_projects(size=1000)
+        volunteers_response = api_client.get_volunteers(size=100)
+        projects_response = api_client.get_projects(size=100)
         
         volunteers = volunteers_response.get('items', [])
         projects = projects_response.get('items', [])
@@ -249,9 +249,9 @@ def show_skill_statistics():
     
     try:
         # Obtener todos los datos
-        skills_response = api_client.get_skills(size=1000)
-        volunteers_response = api_client.get_volunteers(size=1000)
-        projects_response = api_client.get_projects(size=1000)
+        skills_response = api_client.get_skills(size=100)
+        volunteers_response = api_client.get_volunteers(size=100)
+        projects_response = api_client.get_projects(size=100)
         
         skills = skills_response.get('items', [])
         volunteers = volunteers_response.get('items', [])
@@ -385,12 +385,12 @@ def show_skill_statistics():
 def show_skill_list(usage_filter: str, search_term: str):
     """Muestra listado filtrado de skills"""
     try:
-        skills_response = api_client.get_skills(size=1000)
+        skills_response = api_client.get_skills(size=100)
         skills = skills_response.get('items', [])
         
         # Obtener datos de uso
-        volunteers_response = api_client.get_volunteers(size=1000)
-        projects_response = api_client.get_projects(size=1000)
+        volunteers_response = api_client.get_volunteers(size=100)
+        projects_response = api_client.get_projects(size=100)
         
         volunteers = volunteers_response.get('items', [])
         projects = projects_response.get('items', [])

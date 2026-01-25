@@ -162,7 +162,7 @@ def show_category_details():
     
     try:
         # Obtener proyectos de esta categoría
-        projects_response = api_client.get_projects(size=1000)
+        projects_response = api_client.get_projects(size=100)
         projects = projects_response.get('items', [])
         
         category_projects = [
@@ -291,8 +291,8 @@ def show_category_statistics():
     
     try:
         # Obtener todos los datos
-        categories_response = api_client.get_categories(size=1000)
-        projects_response = api_client.get_projects(size=1000)
+        categories_response = api_client.get_categories(size=100)
+        projects_response = api_client.get_projects(size=100)
         
         categories = categories_response.get('items', [])
         projects = projects_response.get('items', [])
@@ -428,11 +428,11 @@ def show_category_statistics():
 def show_category_list(status_filter: str, search_term: str):
     """Muestra listado filtrado de categorías"""
     try:
-        categories_response = api_client.get_categories(size=1000)
+        categories_response = api_client.get_categories(size=100)
         categories = categories_response.get('items', [])
         
         # Obtener proyectos para estadísticas
-        projects_response = api_client.get_projects(size=1000)
+        projects_response = api_client.get_projects(size=100)
         projects = projects_response.get('items', [])
         
         # Enriquecer categorías con estadísticas básicas

@@ -20,166 +20,165 @@ def show():
         show_volunteer_assignments(user)
 
 def show_admin_assignments():
-    """Vista de administrador para todas las asignaciones"""
-    # Filtros
+    """Vista de administrador para gestionar asignaciones"""
+    
+    # KPIs generales (sin endpoint de todas las asignaciones)
+    st.markdown("## 📊 Estadísticas Generales")
+    
+    try:
+        # Opción 1: Mostrar mensaje informativo
+        st.info("📊 Para ver estadísticas generales, selecciona un proyecto específico")
+        
+        # Opción 2: KPIs básicos de proyectos y voluntarios
+        projects_response = api_client.get_projects(size=100)
+        volunteers_response = api_client.get_volunteers(size=100)
+        
+        projects = projects_response.get('items', [])
+        volunteers = volunteers_response.get('items', [])
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("📋 Total Proyectos", len(projects))
+        with col2:
+            active_projects = len([p for p in projects if p.get('status') in ['not_assigned', 'assigned', 'in_progress']])
+            st.metric("🔄 Proyectos Activos", active_projects)
+        with col3:
+            st.metric("👤 Voluntarios", len(volunteers))
+        with col4:
+            active_volunteers = len([v for v in volunteers if v.get('status') == 'active'])
+            st.metric("✅ Voluntarios Activos", active_volunteers)
+        
+    except Exception as e:
+        st.error(f"Error al cargar estadísticas básicas: {e}")
+    
+    # Filtros funcionales
+    st.markdown("---")
     st.markdown("## 🔍 Filtros de Búsqueda")
     
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
         status_filter = st.selectbox(
             "Estado",
-            options=["Todas", "pending", "accepted", "rejected", "completed"],
-            key="assignment_status_filter"
+            options=["Todos", "PENDING", "ACCEPTED", "REJECTED", "COMPLETED"],
+            key="admin_status_filter"
         )
     
     with col2:
-        project_filter = st.selectbox(
-            "Proyecto",
-            options=["Todos"],
-            key="assignment_project_filter"
-        )
-        
-        # Obtener proyectos
+        # Obtener proyectos reales
         try:
-            projects_response = api_client.get_projects(size=1000)
+            projects_response = api_client.get_projects(size=100)
             projects = projects_response.get('items', [])
-            project_names = ["Todos"] + [p.get('name', '') for p in projects]
-            project_filter = st.selectbox(
+            project_options = {p['name']: p['id'] for p in projects}
+            selected_project_name = st.selectbox(
                 "Proyecto",
-                options=project_names,
-                index=0,
-                key="assignment_project_filter"
+                options=["Todos"] + list(project_options.keys()),
+                key="admin_project_filter"
             )
+            selected_project_id = None if selected_project_name == "Todos" else project_options[selected_project_name]
         except:
-            pass
+            selected_project_id = None
     
     with col3:
-        volunteer_filter = st.selectbox(
-            "Voluntario",
-            options=["Todos"],
-            key="assignment_volunteer_filter"
-        )
-        
-        # Obtener voluntarios
-        try:
-            volunteers_response = api_client.get_volunteers(size=1000)
-            volunteers = volunteers_response.get('items', [])
-            volunteer_names = ["Todos"] + [v.get('name', '') for v in volunteers]
-            volunteer_filter = st.selectbox(
-                "Voluntario",
-                options=volunteer_names,
-                index=0,
-                key="assignment_volunteer_filter"
-            )
-        except:
-            pass
+        search_term = st.text_input("🔍 Buscar voluntario...", key="admin_search")
     
-    with col4:
-        search_term = st.text_input("🔍 Buscar asignación", key="assignment_search")
-    
-    # Acciones rápidas
+    # Acciones principales
     st.markdown("---")
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("➕ Nueva Asignación", type="primary"):
-            st.session_state.action = "create_assignment"
+        if st.button("🔍 Ver Matches", type="primary", key="btn_matches"):
+            st.session_state.show_matching = True
             st.rerun()
     
     with col2:
-        if st.button("📊 Estadísticas"):
-            st.session_state.show_assignment_stats = True
+        if st.button("➕ Crear Asignación Manual", type="primary", key="btn_manual"):
+            st.session_state.create_manual = True
             st.rerun()
     
-    with col3:
-        if st.button("🔄 Procesar Pendientes"):
-            st.session_state.process_pending = True
-            st.rerun()
-    
-    with col4:
-        if st.button("📥 Exportar"):
-            st.info("Exportación en desarrollo...")
-    
-    # Mostrar vistas especiales
-    if st.session_state.get('show_assignment_stats'):
-        show_assignment_statistics()
+    # Vistas especiales
+    if st.session_state.get('show_matching'):
+        show_matching_interface()
         return
     
-    if st.session_state.get('action') == 'create_assignment':
-        show_create_assignment()
+    if st.session_state.get('create_manual'):
+        show_manual_assignment_creation()
         return
     
-    if st.session_state.get('process_pending'):
-        show_pending_assignments()
-        return
-    
-    # Listado principal de asignaciones
-    show_assignment_list(status_filter, project_filter, volunteer_filter, search_term)
+    # Listado de asignaciones filtrado
+    show_admin_assignments_list(status_filter, selected_project_id, search_term)
 
 def show_volunteer_assignments(user: Dict):
     """Vista de voluntario para sus asignaciones"""
+    
     # Obtener voluntario actual
-    volunteers_response = api_client.get_volunteers(size=1000)
-    volunteers = volunteers_response.get('items', [])
-    
-    my_volunteer = None
-    for volunteer in volunteers:
-        if volunteer.get('user_id') == user['id']:
-            my_volunteer = volunteer
-            break
-    
-    if not my_volunteer:
-        st.warning("No se encontró tu perfil de voluntario")
-        return
-    
-    # Pestañas
-    tab1, tab2, tab3 = st.tabs(["📋 Mis Asignaciones", "📊 Mi Progreso", "🎯 Disponibles"])
-    
-    with tab1:
-        show_my_assignments(my_volunteer)
-    
-    with tab2:
-        show_assignment_progress(my_volunteer)
-    
-    with tab3:
-        show_available_assignments(my_volunteer)
+    try:
+        volunteers_response = api_client.get_volunteers(size=100)
+        volunteers = volunteers_response.get('items', [])
+        
+        my_volunteer = None
+        for volunteer in volunteers:
+            if volunteer.get('user_id') == user['id']:
+                my_volunteer = volunteer
+                break
+        
+        if not my_volunteer:
+            st.warning("No se encontró tu perfil de voluntario")
+            return
+        
+        # Pestañas funcionales
+        tab1, tab2, tab3 = st.tabs(["📋 Mis Asignaciones", "📊 Mi Progreso", "🎯 Disponibles"])
+        
+        with tab1:
+            show_my_assignments(my_volunteer)
+        
+        with tab2:
+            show_volunteer_progress(my_volunteer)
+        
+        with tab3:
+            show_available_projects(my_volunteer)
+            
+    except Exception as e:
+        st.error(f"Error al cargar datos: {e}")
 
 def show_my_assignments(volunteer: Dict):
-    """Muestra asignaciones del voluntario actual"""
+    """Muestra las asignaciones reales del voluntario"""
     try:
         assignments_response = api_client.get_volunteer_assignments(volunteer['id'])
-        assignments = assignments_response.get('items', [])
+        assignments = assignments_response  # El endpoint ya devuelve la lista directamente
         
         if assignments:
             for assignment in assignments:
                 project = assignment.get('project', {})
-                skill = assignment.get('skill', {})
+                skill = assignment.get('matched_skill', {})
                 
                 with st.expander(f"📋 {project.get('name', 'N/A')}"):
                     st.write(f"**📝 Descripción:** {project.get('description', 'N/A')[:150]}...")
                     st.write(f"**🛠️ Mi Rol:** {skill.get('name', 'N/A')}")
-                    st.write(f"**📅 Límite:** {format_date(project.get('deadline'))}")
                     st.write(f"**🎯 Estado:** {status_badge(assignment.get('status'))}")
                     st.write(f"**📅 Asignado:** {format_date(assignment.get('created_at'))}")
                     
                     # Acciones según estado
                     status = assignment.get('status')
-                    if status == 'pending':
+                    assignment_id = assignment.get('id')
+                    
+                    if status == 'PENDING':
                         col1, col2 = st.columns(2)
                         with col1:
-                            if st.button("✅ Aceptar", key=f"accept_{assignment['id']}"):
-                                api_client.update_assignment_status(assignment['id'], 'accepted')
+                            if st.button("✅ Aceptar", key=f"accept_{assignment_id}"):
+                                api_client.update_assignment_status(assignment_id, 'ACCEPTED')
                                 st.success("¡Asignación aceptada!")
                                 st.rerun()
                         with col2:
-                            if st.button("❌ Rechazar", key=f"reject_{assignment['id']}"):
-                                api_client.update_assignment_status(assignment['id'], 'rejected')
+                            if st.button("❌ Rechazar", key=f"reject_{assignment_id}"):
+                                api_client.update_assignment_status(assignment_id, 'REJECTED')
                                 st.success("Asignación rechazada")
                                 st.rerun()
-                    elif status == 'accepted':
-                        if st.button("✅ Marcar Completado", key=f"complete_{assignment['id']}"):
-                            api_client.update_assignment_status(assignment['id'], 'completed')
+                    
+                    elif status == 'ACCEPTED':
+                        if st.button("✅ Marcar Completado", key=f"complete_{assignment_id}"):
+                            api_client.update_assignment_status(assignment_id, 'COMPLETED')
                             st.success("¡Asignación completada! 🎉")
                             st.rerun()
         else:
@@ -188,44 +187,50 @@ def show_my_assignments(volunteer: Dict):
     except Exception as e:
         st.error(f"Error al cargar tus asignaciones: {e}")
 
-def show_assignment_progress(volunteer: Dict):
-    """Muestra progreso y estadísticas del voluntario"""
+def show_volunteer_progress(volunteer: Dict):
+    """Muestra estadísticas reales del voluntario"""
     try:
         assignments_response = api_client.get_volunteer_assignments(volunteer['id'])
-        assignments = assignments_response.get('items', [])
+        assignments = assignments_response
         
         if not assignments:
             st.info("No hay asignaciones para mostrar estadísticas")
             return
         
-        # Estadísticas generales
+        # Estadísticas reales
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            total_assignments = len(assignments)
-            st.metric("📋 Total Asignaciones", total_assignments)
+            st.metric("📋 Total Asignaciones", len(assignments))
         
         with col2:
-            completed = len([a for a in assignments if a.get('status') == 'completed'])
+            completed = len([a for a in assignments if a.get('status') == 'COMPLETED'])
             st.metric("✅ Completadas", completed)
         
         with col3:
-            pending = len([a for a in assignments if a.get('status') == 'pending'])
+            pending = len([a for a in assignments if a.get('status') == 'PENDING'])
             st.metric("⏳ Pendientes", pending)
         
         with col4:
-            active = len([a for a in assignments if a.get('status') == 'accepted'])
+            active = len([a for a in assignments if a.get('status') == 'ACCEPTED'])
             st.metric("🔄 Activas", active)
         
-        # Gráfico de progreso
-        st.subheader("📈 Distribución de Asignaciones")
-        
+        # Gráfico real de distribución
         status_counts = {}
-        for assignment in assignments:
-            status = assignment.get('status', 'unknown')
-            status_counts[status] = status_counts.get(status, 0) + 1
+        skill_counts = {}
         
+        for assignment in assignments:
+            # Contar por estado
+            status = assignment.get('status', 'Unknown')
+            status_counts[status] = status_counts.get(status, 0) + 1
+            
+            # Contar por skill
+            skill_name = assignment.get('matched_skill', {}).get('name', 'Unknown')
+            skill_counts[skill_name] = skill_counts.get(skill_name, 0) + 1
+        
+        # Gráfico de estados
         if status_counts:
+            st.subheader("📈 Distribución por Estado")
             fig = px.pie(
                 values=list(status_counts.values()),
                 names=list(status_counts.keys()),
@@ -233,15 +238,9 @@ def show_assignment_progress(volunteer: Dict):
             )
             st.plotly_chart(fig, use_container_width=True)
         
-        # Skills más usadas
-        st.subheader("🛠️ Skills Más Usadas")
-        
-        skill_counts = {}
-        for assignment in assignments:
-            skill_name = assignment.get('skill', {}).get('name', 'Unknown')
-            skill_counts[skill_name] = skill_counts.get(skill_name, 0) + 1
-        
+        # Gráfico de skills más usadas
         if skill_counts:
+            st.subheader("🛠️ Skills Más Utilizadas")
             fig = px.bar(
                 x=list(skill_counts.values()),
                 y=list(skill_counts.keys()),
@@ -254,318 +253,323 @@ def show_assignment_progress(volunteer: Dict):
     except Exception as e:
         st.error(f"Error al cargar estadísticas: {e}")
 
-def show_available_assignments(volunteer: Dict):
-    """Muestra asignaciones disponibles para el voluntario"""
-    st.info("🔍 Buscando proyectos que matchean tus skills...")
+def show_available_projects(volunteer: Dict):
+    """Muestra proyectos que matchean con las skills del voluntario"""
+    st.info("🔍 Buscando proyectos que requieren tus skills...")
     
     try:
         # Obtener skills del voluntario
-        my_skills = volunteer.get('skills', [])
-        if not my_skills:
-            st.warning("No tienes skills registradas. Añade skills para ver asignaciones disponibles.")
+        volunteer_skills = volunteer.get('skills', [])
+        if not volunteer_skills:
+            st.warning("No tienes skills registradas. Añade skills para ver proyectos disponibles.")
             return
         
         # Obtener todos los proyectos activos
-        projects_response = api_client.get_projects(size=1000)
+        projects_response = api_client.get_projects(size=100)
         projects = projects_response.get('items', [])
         
-        # Buscar asignaciones potenciales
-        available_assignments = []
-        my_skill_ids = [s['id'] for s in my_skills]
+        # Buscar proyectos que requieran las skills del voluntario
+        matching_projects = []
+        volunteer_skill_ids = [s['id'] for s in volunteer_skills]
         
         for project in projects:
-            if project.get('status') in ['not_assigned', 'assigned']:
-                project_skills = project.get('skills', [])
-                
-                for project_skill in project_skills:
-                    # Si el proyecto requiere una de mis skills
-                    if project_skill['id'] in my_skill_ids:
-                        # Verificar si ya tengo una asignación para este skill en este proyecto
-                        # (Esto requeriría lógica adicional)
-                        
-                        available_assignments.append({
-                            'project': project,
-                            'skill': project_skill,
-                            'project_skill_match': True
-                        })
-        
-        if available_assignments:
-            st.write(f"**Se encontraron {len(available_assignments)} oportunidades:**")
+            project_skills = project.get('skills', [])
             
-            for assignment in available_assignments:
-                project = assignment['project']
-                skill = assignment['skill']
+            # Si el proyecto requiere alguna de las skills del voluntario
+            required_skill = None
+            for project_skill in project_skills:
+                if project_skill['id'] in volunteer_skill_ids:
+                    required_skill = project_skill
+                    break
+            
+            if required_skill:
+                matching_projects.append({
+                    'project': project,
+                    'required_skill': required_skill
+                })
+        
+        if matching_projects:
+            st.write(f"**Se encontraron {len(matching_projects)} proyectos que requieren tus skills:**")
+            
+            for match in matching_projects:
+                project = match['project']
+                skill = match['required_skill']
                 
-                with st.expander(f"📋 {project.get('name', 'N/A')} - {skill.get('name', 'N/A')}"):
+                with st.expander(f"📋 {project.get('name', 'N/A')} - Necesita: {skill.get('name', 'N/A')}"):
                     st.write(f"**📝 Descripción:** {project.get('description', 'N/A')[:150]}...")
                     st.write(f"**🛠️ Skill Requerida:** {skill.get('name', 'N/A')}")
-                    st.write(f"**📅 Límite:** {format_date(project.get('deadline'))}")
-                    st.write(f"**🎯 Estado:** {status_badge(project.get('status'))}")
+                    st.write(f"**🎯 Estado del Proyecto:** {status_badge(project.get('status'))}")
                     
-                    if st.button("🤝 Solicitar Asignación", key=f"request_{project['id']}_{skill['id']}"):
-                        # Crear solicitud de asignación
-                        assignment_data = {
-                            'project_skill_id': f"{project['id']}_{skill['id']}",  # Formato假设
-                            'volunteer_skill_id': f"{volunteer['id']}_{skill['id']}",    # Formato假设
-                            'status': 'pending'
-                        }
-                        
-                        try:
-                            api_client.create_assignment(assignment_data)
-                            st.success("¡Solicitud enviada! El administrador la revisará pronto.")
+                    # Botón para solicitar asignación (solo para admin, volunteers necesitan otro flujo)
+                    if auth.is_admin():
+                        if st.button("🤝 Asignar Voluntario", key=f"assign_{project['id']}_{skill['id']}"):
+                            st.session_state.assign_project = project
+                            st.session_state.assign_skill = skill
+                            st.session_state.assign_volunteer = volunteer
                             st.rerun()
-                        except Exception as e:
-                            st.error(f"Error al crear solicitud: {e}")
+                    else:
+                        st.info("Contacta a un administrador para solicitar esta asignación")
         else:
-            st.info("No hay nuevas asignaciones disponibles para tus skills en este momento")
+            st.info("No hay proyectos disponibles para tus skills en este momento")
     
     except Exception as e:
-        st.error(f"Error al buscar asignaciones disponibles: {e}")
+        st.error(f"Error al buscar proyectos: {e}")
 
-def show_create_assignment():
-    """Formulario para crear nueva asignación manualmente"""
-    st.markdown("## ➕ Crear Nueva Asignación")
+def show_matching_interface():
+    """Interfaz para ver matches entre proyectos y voluntarios"""
+    st.markdown("## 🔍 Matching de Proyectos y Voluntarios")
+    
+    try:
+        # Obtener todos los proyectos
+        projects_response = api_client.get_projects(size=100)
+        projects = projects_response.get('items', [])
+        
+        # Seleccionar proyecto
+        project_options = {p['name']: p['id'] for p in projects}
+        selected_project_name = st.selectbox(
+            "Selecciona un proyecto para ver voluntarios matching:",
+            options=list(project_options.keys()),
+            key="match_project_select"
+        )
+        
+        if selected_project_name:
+            project_id = project_options[selected_project_name]
+            
+            # Obtener voluntarios que hacen match
+            matching_volunteers = api_client.get_project_matching_volunteers(project_id)
+            
+            if matching_volunteers:
+                st.write(f"**{len(matching_volunteers)} voluntarios hacen match con este proyecto:**")
+                
+                for volunteer in matching_volunteers:
+                    with st.expander(f"👤 {volunteer.get('volunteer_name', 'N/A')}"):
+                        st.write(f"**ID Voluntario:** {volunteer.get('volunteer_id', 'N/A')}")
+                        
+                        matched_skills = volunteer.get('matched_skills', [])
+                        st.write("**Skills Matching:**")
+                        for skill in matched_skills:
+                            st.write(f"- {skill.get('name', 'N/A')}")
+                        
+                        # Botón para crear asignación
+                        if st.button("🤝 Crear Asignación", key=f"match_{volunteer.get('volunteer_id')}"):
+                            # Guardar información para el formulario de creación
+                            st.session_state.create_from_match = {
+                                'project_id': project_id,
+                                'volunteer_id': volunteer.get('volunteer_id'),
+                                'matched_skills': matched_skills
+                            }
+                            st.session_state.create_manual = True  # Redirigir al formulario manual
+                            st.session_state.show_matching = False  # Cerrar vista de matching
+                            st.rerun()
+            else:
+                st.info("No hay voluntarios que hagan match con este proyecto")
+    
+    except Exception as e:
+        st.error(f"Error al buscar matches: {e}")
+    
+    # Botón para volver - ASEGURARSE DE QUE FUNCIONE
+    if st.button("🔙 Volver a Gestión", key="back_from_matching"):
+        st.session_state.show_matching = False
+        st.rerun()
+
+def show_manual_assignment_creation():
+    """Formulario para crear asignación manualmente"""
+    st.markdown("## ➕ Crear Asignación Manual")
+    
+    # Botón de volver al principio
+    if st.button("🔙 Volver a Gestión", key="back_from_manual"):
+        st.session_state.create_manual = False
+        st.rerun()
     
     try:
         # Obtener datos necesarios
-        volunteers_response = api_client.get_volunteers(size=1000)
-        projects_response = api_client.get_projects(size=1000)
+        volunteers_response = api_client.get_volunteers(size=100)
+        projects_response = api_client.get_projects(size=100)
         
         volunteers = volunteers_response.get('items', [])
         projects = projects_response.get('items', [])
         
+        # VALIDACIÓN ANTES DEL FORMULARIO
+        if not volunteers:
+            st.error("❌ No hay voluntarios disponibles en el sistema")
+            return
+        
+        if not projects:
+            st.error("❌ No hay proyectos disponibles en el sistema")
+            return
+        
+        # Verificar si los proyectos tienen skills
+        projects_with_skills = [p for p in projects if p.get('skills')]
+        if not projects_with_skills:
+            st.error("❌ No hay proyectos con skills registradas")
+            return
+        
         with st.form("create_assignment_form"):
-            st.subheader("📋 Información de Asignación")
-            
             col1, col2 = st.columns(2)
             
             with col1:
-                # Seleccionar voluntario
-                volunteer_options = {f"{v.get('name', '')} ({v.get('email', '')})": v['id'] for v in volunteers}
-                selected_volunteer_name = st.selectbox(
-                    "Voluntario *",
-                    options=list(volunteer_options.keys())
-                )
-                
-                # Seleccionar proyecto
-                project_options = {p.get('name', ''): p['id'] for p in projects}
+                # Seleccionar proyecto (solo con skills)
+                project_options = {p.get('name', ''): p for p in projects_with_skills}
                 selected_project_name = st.selectbox(
                     "Proyecto *",
-                    options=list(project_options.keys())
+                    options=list(project_options.keys()),
+                    key="project_select"
                 )
+                selected_project = project_options[selected_project_name]
+                
+                # Mostrar skills del proyecto
+                project_skills = selected_project.get('skills', [])
+                selected_skill = None
+                
+                if project_skills:
+                    skill_options = {s.get('name', ''): s for s in project_skills}
+                    selected_skill_name = st.selectbox(
+                        "Skill Requerida *",
+                        options=list(skill_options.keys()),
+                        key="skill_select"
+                    )
+                    selected_skill = skill_options[selected_skill_name]
+                else:
+                    st.error("El proyecto no tiene skills registradas")
             
             with col2:
-                # Obtener skills del proyecto seleccionado
-                selected_project = next(
-                    (p for p in projects if p['id'] == project_options[selected_project_name]), 
-                    None
+                # Seleccionar voluntario
+                volunteer_options = {f"{v.get('name', '')} (ID:{v.get('id')})": v for v in volunteers}
+                selected_volunteer_name = st.selectbox(
+                    "Voluntario *",
+                    options=list(volunteer_options.keys()),
+                    key="volunteer_select"
                 )
+                selected_volunteer = volunteer_options[selected_volunteer_name]
                 
-                if selected_project:
-                    project_skills = selected_project.get('skills', [])
-                    if project_skills:
-                        skill_options = {s.get('name', ''): s['id'] for s in project_skills}
-                        selected_skill_name = st.selectbox(
-                            "Skill Requerida *",
-                            options=list(skill_options.keys())
-                        )
+                # Verificar si el voluntario tiene la skill requerida
+                volunteer_skill = None
+                volunteer_skills = selected_volunteer.get('skills', [])
+                
+                if selected_skill:
+                    for vs in volunteer_skills:
+                        if vs.get('id') == selected_skill.get('id'):
+                            volunteer_skill = vs
+                            break
+                
+                if selected_skill:
+                    if volunteer_skill:
+                        st.success(f"✅ El voluntario tiene la skill: {selected_skill.get('name')}")
                     else:
-                        st.warning("El proyecto seleccionado no tiene skills requeridas")
-                        selected_skill_name = None
-                else:
-                    selected_skill_name = None
-                
-                # Estado inicial
-                status_options = ["pending", "accepted"]
-                initial_status = st.selectbox(
-                    "Estado Inicial",
-                    options=status_options,
-                    index=0
-                )
+                        st.error(f"❌ El voluntario no tiene la skill: {selected_skill.get('name')}")
             
-            submitted = st.form_submit_button("💾 Crear Asignación", type="primary")
-            
-            if submitted and selected_skill_name:
-                try:
-                    assignment_data = {
-                        'project_skill_id': f"{project_options[selected_project_name]}_{skill_options[selected_skill_name]}",
-                        'volunteer_skill_id': f"{volunteer_options[selected_volunteer_name]}_{skill_options[selected_skill_name]}",
-                        'status': initial_status
-                    }
-                    
-                    api_client.create_assignment(assignment_data)
-                    st.success("✅ Asignación creada exitosamente")
-                    st.session_state.action = None
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Error al crear asignación: {e}")
-    
-    except Exception as e:
-        st.error(f"Error al cargar datos para crear asignación: {e}")
-    
-    if st.button("🔙 Cancelar"):
-        st.session_state.action = None
-        st.rerun()
-
-def show_pending_assignments():
-    """Muestra y permite procesar asignaciones pendientes"""
-    st.markdown("## ⏳ Procesar Asignaciones Pendientes")
-    
-    try:
-        # Obtener todas las asignaciones pendientes
-        # (Esto requeriría un endpoint específico o filtrar todas las asignaciones)
-        
-        # Por ahora, simulo el proceso
-        st.info("📝 Buscando asignaciones pendientes...")
-        
-        # Simulación - en realidad necesitarías un endpoint para obtener todas las asignaciones
-        st.warning("Esta funcionalidad requiere un endpoint para obtener todas las asignaciones pendientes")
-        
-        # Ejemplo de cómo se vería el procesamiento:
-        with st.expander("📋 Ejemplo: Asignación Pendiente"):
-            col1, col2 = st.columns([3, 1])
+            # BOTONES SIEMPRE PRESENTES
+            col1, col2 = st.columns(2)
             
             with col1:
-                st.write("**Proyecto:** Ejemplo Proyecto")
-                st.write("**Voluntario:** Juan Pérez")
-                st.write("**Skill:** Python")
-                st.write("**Fecha:** 2024-01-20")
+                submitted = st.form_submit_button("💾 Crear Asignación", type="primary")
             
             with col2:
-                col_btn1, col_btn2 = st.columns(2)
-                with col_btn1:
-                    if st.button("✅", key="example_accept"):
-                        st.success("Aceptado")
-                with col_btn2:
-                    if st.button("❌", key="example_reject"):
-                        st.error("Rechazado")
-    
-    except Exception as e:
-        st.error(f"Error al procesar asignaciones pendientes: {e}")
-    
-    if st.button("🔙 Volver al Listado"):
-        st.session_state.process_pending = None
-        st.rerun()
-
-def show_assignment_statistics():
-    """Muestra estadísticas generales de asignaciones"""
-    st.markdown("## 📊 Estadísticas de Asignaciones")
-    
-    try:
-        # Simulación - necesitarías endpoints reales para obtener estadísticas
-        st.info("📊 Cargando estadísticas de asignaciones...")
-        
-        # KPIs simulados
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            st.metric("📋 Total Asignaciones", "156")
-        
-        with col2:
-            st.metric("✅ Completadas", "89")
-        
-        with col3:
-            st.metric("⏳ Pendientes", "34")
-        
-        with col4:
-            st.metric("🔄 Activas", "33")
-        
-        # Gráficos simulados
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.subheader("📈 Tendencia Mensual")
+                cancelled = st.form_submit_button("🔙 Cancelar")
             
-            # Simulación de datos mensuales
-            months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio']
-            completed = [12, 15, 18, 22, 25, 23]
-            pending = [5, 7, 6, 8, 9, 7]
-            
-            fig = px.line(
-                x=months,
-                y=[completed, pending],
-                title="Evolución de Asignaciones"
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        
-        with col2:
-            st.subheader("🛠️ Asignaciones por Skill")
-            
-            skills_data = {
-                'Python': 45,
-                'JavaScript': 38,
-                'Diseño': 28,
-                'Marketing': 22,
-                'Datos': 23
-            }
-            
-            fig = px.bar(
-                x=list(skills_data.values()),
-                y=list(skills_data.keys()),
-                orientation='h',
-                title="Distribución por Skills"
-            )
-            st.plotly_chart(fig, use_container_width=True)
-    
-    except Exception as e:
-        st.error(f"Error al cargar estadísticas: {e}")
-    
-    if st.button("🔙 Volver"):
-        st.session_state.show_assignment_stats = None
-        st.rerun()
-
-def show_assignment_list(status_filter: str, project_filter: str, volunteer_filter: str, search_term: str):
-    """Muestra listado filtrado de asignaciones"""
-    try:
-        # NOTA: Esta función requeriría un endpoint para obtener TODAS las asignaciones
-        st.warning("📝 Esta funcionalidad requiere un endpoint para obtener todas las asignaciones con filtros")
-        
-        # Simulación de cómo se vería el listado
-        st.info("Mostrando listado simulado de asignaciones...")
-        
-        # Ejemplo de tabla de asignaciones
-        assignment_data = [
-            {
-                'ID': 1,
-                'Proyecto': 'Website ONG',
-                'Voluntario': 'María García',
-                'Skill': 'Diseño UX',
-                'Estado': 'accepted',
-                'Fecha': '2024-01-15'
-            },
-            {
-                'ID': 2,
-                'Proyecto': 'App Móvil',
-                'Voluntario': 'Juan López',
-                'Skill': 'React Native',
-                'Estado': 'pending',
-                'Fecha': '2024-01-20'
-            }
-        ]
-        
-        for assignment in assignment_data:
-            with st.expander(f"📋 {assignment['Proyecto']} - {assignment['Voluntario']}"):
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    st.write(f"**👤 Voluntario:** {assignment['Voluntario']}")
-                    st.write(f"**📋 Proyecto:** {assignment['Proyecto']}")
-                
-                with col2:
-                    st.write(f"**🛠️ Skill:** {assignment['Skill']}")
-                    st.write(f"**🎯 Estado:** {status_badge(assignment['Estado'])}")
-                
-                with col3:
-                    st.write(f"**📅 Fecha:** {assignment['Fecha']}")
+            # Lógica después del envío
+            if submitted:
+                if selected_skill and volunteer_skill:
+                    try:
+                        assignment_data = {
+                            'project_skill_id': selected_skill.get('id'),
+                            'volunteer_skill_id': volunteer_skill.get('id'),
+                            'status': 'PENDING'
+                        }
+                        
+                        result = api_client.create_assignment(assignment_data)
+                        st.success("✅ Asignación creada exitosamente!")
+                        st.session_state.create_manual = False
+                        st.rerun()
                     
-                    if assignment['Estado'] == 'pending':
-                        col_btn1, col_btn2 = st.columns(2)
-                        with col_btn1:
-                            if st.button("✅", key=f"accept_{assignment['ID']}"):
-                                st.success("Aceptado")
-                        with col_btn2:
-                            if st.button("❌", key=f"reject_{assignment['ID']}"):
-                                st.error("Rechazado")
+                    except Exception as e:
+                        st.error(f"❌ Error al crear asignación: {e}")
+                else:
+                    st.error("❌ No se puede crear la asignación - no hay match de skills")
+            
+            if cancelled:
+                st.session_state.create_manual = False
+                st.rerun()
+    
+    except Exception as e:
+        st.error(f"Error al cargar datos: {e}")
+
+def show_admin_assignments_list(status_filter, project_id, search_term):
+    """Muestra listado de asignaciones con filtros"""
+    
+    if not project_id:
+        st.info("🔍 Selecciona un proyecto para ver sus asignaciones")
+        return
+    
+    try:
+        # Obtener asignaciones solo del proyecto seleccionado
+        assignments_response = api_client.get_project_assignments(project_id)
+        assignments = assignments_response  # El endpoint ya devuelve la lista directamente
+        
+        # Aplicar filtros adicionales
+        filtered_assignments = []
+        
+        for assignment in assignments:
+            # Filtro por estado
+            if status_filter != "Todos":
+                if assignment.get('status') != status_filter:
+                    continue
+            
+            # Filtro por búsqueda
+            if search_term:
+                volunteer = assignment.get('volunteer', {})
+                volunteer_name = volunteer.get('user_name', '').lower()
+                if search_term.lower() not in volunteer_name:
+                    continue
+            
+            filtered_assignments.append(assignment)
+        
+        if filtered_assignments:
+            st.write(f"**{len(filtered_assignments)} asignaciones encontradas:**")
+            
+            for assignment in filtered_assignments:
+                project = assignment.get('project', {})
+                volunteer = assignment.get('volunteer', {})
+                skill = assignment.get('matched_skill', {})
+                
+                with st.expander(f"📋 {project.get('name', 'N/A')} - {volunteer.get('user_name', 'N/A')}"):
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        st.write(f"**👤 Voluntario:** {volunteer.get('user_name', 'N/A')}")
+                        st.write(f"**📋 Proyecto:** {project.get('name', 'N/A')}")
+                    
+                    with col2:
+                        st.write(f"**🛠️ Skill:** {skill.get('name', 'N/A')}")
+                        st.write(f"**🎯 Estado:** {status_badge(assignment.get('status'))}")
+                    
+                    with col3:
+                        st.write(f"**📅 Creada:** {format_date(assignment.get('created_at'))}")
+                        
+                        # Acciones según estado
+                        status = assignment.get('status')
+                        assignment_id = assignment.get('id')
+                        
+                        if status == 'PENDING':
+                            col_btn1, col_btn2 = st.columns(2)
+                            with col_btn1:
+                                if st.button("✅ Aprobar", key=f"admin_accept_{assignment_id}"):
+                                    api_client.update_assignment_status(assignment_id, 'ACCEPTED')
+                                    st.success("Asignación aprobada")
+                                    st.rerun()
+                            with col_btn2:
+                                if st.button("❌ Rechazar", key=f"admin_reject_{assignment_id}"):
+                                    api_client.update_assignment_status(assignment_id, 'REJECTED')
+                                    st.error("Asignación rechazada")
+                                    st.rerun()
+                        
+                        elif status == 'ACCEPTED':
+                            if st.button("✅ Completar", key=f"admin_complete_{assignment_id}"):
+                                api_client.update_assignment_status(assignment_id, 'COMPLETED')
+                                st.success("Asignación completada")
+                                st.rerun()
+        else:
+            st.info("No hay asignaciones que coincidan con los filtros")
     
     except Exception as e:
         st.error(f"Error al cargar asignaciones: {e}")

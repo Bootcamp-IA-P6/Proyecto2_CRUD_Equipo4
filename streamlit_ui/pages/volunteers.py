@@ -34,7 +34,7 @@ def show():
         )
         # Obtener skills disponibles
         try:
-            skills_response = api_client.get_skills(size=1000)
+            skills_response = api_client.get_skills(size=100)
             skills = skills_response.get('items', [])
             skill_names = ["Todas"] + [s.get('name', '') for s in skills]
             skill_filter = st.selectbox(
@@ -112,7 +112,7 @@ def show_statistics():
     st.markdown("## 📊 Estadísticas de Voluntarios")
     
     try:
-        volunteers_response = api_client.get_volunteers(size=1000)
+        volunteers_response = api_client.get_volunteers(size=100)
         volunteers = volunteers_response.get('items', [])
         
         if not volunteers:
@@ -378,7 +378,7 @@ def show_volunteer_details():
 def show_volunteer_list(status_filter: str, skill_filter: str, search_term: str):
     """Muestra listado filtrado de voluntarios"""
     try:
-        volunteers_response = api_client.get_volunteers(size=1000)
+        volunteers_response = api_client.get_volunteers(size=100)
         volunteers = volunteers_response.get('items', [])
         
         # Aplicar filtros

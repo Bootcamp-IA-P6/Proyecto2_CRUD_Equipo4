@@ -45,7 +45,7 @@ def handle_actions():
 def get_my_volunteer(user: Dict) -> Dict:
     """Obtiene el perfil de voluntario del usuario actual"""
     try:
-        volunteers_response = api_client.get_volunteers(size=1000)
+        volunteers_response = api_client.get_volunteers(size=100)
         volunteers = volunteers_response.get('items', [])
         
         for volunteer in volunteers:
@@ -267,7 +267,7 @@ def show_add_skill():
     
     try:
         # Obtener skills disponibles
-        skills_response = api_client.get_skills(size=1000)
+        skills_response = api_client.get_skills(size=100)
         all_skills = skills_response.get('items', [])
         
         # Obtener voluntario actual
@@ -319,7 +319,7 @@ def show_add_skill():
             
             # Mostrar proyectos que requieren esta skill
             try:
-                projects_response = api_client.get_projects(size=1000)
+                projects_response = api_client.get_projects(size=100)
                 projects = projects_response.get('items', [])
                 
                 projects_with_skill = [
