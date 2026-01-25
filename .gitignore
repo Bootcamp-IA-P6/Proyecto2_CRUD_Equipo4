@@ -6,7 +6,7 @@
 docker-compose.yml
 .dockerignore
 docker/
-streamlit_UI/
+
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
