@@ -11,18 +11,18 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # importar Base y engine reales
-from database.database import Base, engine
+from app.database.database import Base, engine
 
 # Importar todos los modelos explícitamente para que Alembic los vea
-from models.users_model import User
-from models.volunteers_model import Volunteer
-from models.skill_model import Skill
-from models.volunteer_skill_model import volunteer_skills
-from models.project_model import Project
-from models.project_skill_model import project_skills
-from models.category_model import Category
-from models.role_model import Role
-from models.assignment_model import Assignment
+from app.models.users_model import User
+from app.models.volunteers_model import Volunteer
+from app.models.skill_model import Skill
+from app.models.volunteer_skill_model import volunteer_skills
+from app.models.project_model import Project
+from app.models.project_skill_model import project_skills
+from app.models.category_model import Category
+from app.models.role_model import Role
+from app.models.assignment_model import Assignment
 
 
 
