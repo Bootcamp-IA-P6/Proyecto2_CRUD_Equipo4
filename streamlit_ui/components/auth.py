@@ -49,48 +49,8 @@ class Authentication:
 
 auth = Authentication()
 
-def set_development_mode():
-    """Desactiva autenticación para desarrollo"""
-    import os
-    return os.getenv("DEVELOPMENT_MODE", "false").lower() == "true"
 
-# MODIFICA LAS FUNCIONES PRINCIPALES:
 def require_auth():
-    """Middleware que requiere autenticación"""
-    if set_development_mode():
-        st.info("🧪 Modo Desarrollo - Sin Autenticación")
-        return
-    elif not auth.is_authenticated():
-        st.error("Debes iniciar sesión para acceder a esta página")
-        st.stop()
-
-def require_admin():
-    """Middleware que requiere rol de administrador"""
-    if set_development_mode():
-        st.info("👑 Modo Desarrollo - Admin Automático")
-        return
-    elif not auth.is_admin():
-        st.error("Esta función solo está disponible para administradores")
-        st.stop()
-
-# AÑADE USUARIO FICTICIO PARA DESARROLLO:
-def get_development_user():
-    """Usuario de desarrollo"""
-    return {
-        'id': 1,
-        'name': 'Development User',
-        'email': 'dev@test.com',
-        'role_id': 1,  # Admin
-        'is_admin': True
-    }
-
-def get_current_user():
-    """Obtiene usuario actual"""
-    if set_development_mode():
-        return get_development_user()
-    return st.session_state.get('user')
-
-'''def require_auth():
     """Middleware que requiere autenticación"""
     if not auth.is_authenticated():
         st.error("Debes iniciar sesión para acceder a esta página")
@@ -100,5 +60,5 @@ def require_admin():
     """Middleware que requiere rol de administrador"""
     if not auth.is_admin():
         st.error("Esta función solo está disponible para administradores")
-        st.stop()'''
+        st.stop()
         

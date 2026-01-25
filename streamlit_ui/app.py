@@ -44,43 +44,6 @@ def show_sidebar():
 
 
 def show_login():
-    """Página de login funcional"""
-    st.markdown("# 🔐 Iniciar Sesión")
-    
-    # Opción de desarrollo
-    if st.checkbox("🧪 Modo Desarrollo (Saltar Login)"):
-        st.session_state.user = {
-            'id': 1,
-            'name': 'Development User', 
-            'email': 'dev@test.com',
-            'role_id': 1,
-            'is_admin': True
-        }
-        st.success("🧪 Modo desarrollo activado")
-        st.rerun()
-        return
-    
-    # Login normal
-    with st.form("login_form"):
-        email = st.text_input("Email", key="login_email")
-        password = st.text_input("Password", type="password", key="login_password")
-        
-        if st.form_submit_button("Iniciar Sesión", type="primary"):
-            # Temporal: acepta cualquier email/password para desarrollo
-            if email and password:
-                st.session_state.user = {
-                    'id': 1,
-                    'name': email.split('@')[0].title(),
-                    'email': email,
-                    'role_id': 1 if 'admin' in email else 2,
-                    'is_admin': 'admin' in email
-                }
-                st.success(f"¡Bienvenido {email.split('@')[0].title()}!")
-                st.rerun()
-            else:
-                st.error("Por favor ingresa email y contraseña")
-'''                
-def show_login():
     """Página de login"""
     st.markdown("# 🔐 Iniciar Sesión")
     
@@ -96,7 +59,7 @@ def show_login():
                 st.success(f"¡Bienvenido {user['name']}!")
                 st.rerun()
             else:
-                st.error("Email o contraseña incorrectos")'''
+                st.error("Email o contraseña incorrectos")
 
 def main():
     """Función principal de la aplicación"""
