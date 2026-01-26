@@ -3,10 +3,9 @@
 .vscode
 
 #docker-por ahora
-docker-compose.yml
+#docker-compose.yml
 .dockerignore
-docker/
-
+.env.docker
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
