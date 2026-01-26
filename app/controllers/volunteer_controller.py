@@ -56,7 +56,7 @@ def get_volunteers(db: Session) -> Page[VolunteerOut]:
 def get_volunteer(db: Session, id: int):
     logger.info(f"Trying to get volunteer {id}")
 
-    volunteer = db.query(Volunteer).filter(Volunteer.id == id, Volunteer.deleted_at.is_(None)).first()
+    volunteer = db.query(Volunteer).filter(Volunteer.user_id == id, Volunteer.deleted_at.is_(None)).first()
 
     if not volunteer:
         logger.warning(f"Volunteer with ID {id} not found")

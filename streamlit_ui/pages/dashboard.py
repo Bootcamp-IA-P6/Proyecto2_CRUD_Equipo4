@@ -184,24 +184,18 @@ def show_volunteer_dashboard():
     st.markdown(f"# 📊 Mi Dashboard - {user['name']}")
     
     try:
-        # Obtener datos del voluntario actual
-        # Esto requeriría un endpoint para obtener volunteer por user_id
-        volunteers_response = api_client.get_volunteers(size=100)
-        volunteers = volunteers_response.get('items', [])
+        # Ya tenemos los datos del usuario actual
+        user_id = user['id']
+        
+        # Obtener información completa del usuario por si hay datos adicionales
+        user_data = api_client.get_user(user_id)
+        volunteer=api_client.get_volunteer(user_id)
         
         # Encontrar voluntario correspondiente al usuario actual
-        my_volunteer = None
-        volunteer_id = None
+        volunteer_id = volunteer['id']
         
-        # Primero intentar obtener directamente por user_id si hubiera endpoint
-        # Si no, buscar en la lista
-        for volunteer in volunteers:
-            if volunteer.get('user_id') == user['id']:
-                my_volunteer = volunteer
-                volunteer_id = volunteer['id']
-                break
         
-        if not my_volunteer:
+        if not volunteer:
             st.warning("No se encontró tu perfil de voluntario. Contacta al administrador.")
             if st.button("Crear Perfil de Voluntario"):
                 st.session_state.action = "create_volunteer"
@@ -219,7 +213,7 @@ def show_volunteer_dashboard():
         
         with col2:
             st.write(f"**Teléfono:** {user.get('phone', 'N/A')}")
-            st.write(f"**Estado:** {status_badge(my_volunteer.get('status'))}")
+            st.write(f"**Estado:** {status_badge(volunteer.get('status'))}")
         
         with col3:
             if st.button("✏️ Editar Perfil"):
@@ -227,7 +221,7 @@ def show_volunteer_dashboard():
                 st.rerun()
         
         # Skills
-        skills = my_volunteer.get('skills', [])
+        skills = volunteer.get('skills', [])
         st.markdown("## 🛠️ Mis Skills")
         
         if skills:
@@ -250,7 +244,7 @@ def show_volunteer_dashboard():
         # Mis Asignaciones
         st.markdown("## 📋 Mis Asignaciones")
         
-        assignments_response = api_client.get_volunteer_assignments(my_volunteer['id'])
+        assignments_response = api_client.get_volunteer_assignments(volunteer['id'])
         assignments = assignments_response.get('items', [])
         
         if assignments:

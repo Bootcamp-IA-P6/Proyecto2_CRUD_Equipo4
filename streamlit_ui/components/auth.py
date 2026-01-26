@@ -7,29 +7,35 @@ class Authentication:
     def __init__(self):
         self.api_client = api_client
     
-    def login(self, email: str, password: str) -> Optional[Dict]:
-        """Login usando api_client con manejo mejorado"""
+    def login(self, email: str, password: str)-> Optional[Dict]:
+        """
+        Ahora esta función devuelve una TUPLA: (user_data, error_message)
+        """
         try:
             response = self.api_client.login(email, password)
             
             if response and 'access_token' in response:
-                # Guardar token
                 st.session_state.token = response['access_token']
-                
-                # Obtener datos del usuario INMEDIATAMENTE
                 user_data = self.get_me()
                 if user_data:
                     st.session_state.user = user_data
                     st.session_state.is_authenticated = True
-                    st.success(f"¡Bienvenido {user_data['name']}!")
-                    return user_data
+                    return user_data, None
+                return None, "No se pudieron obtener los datos del perfil."
             else:
-                st.error("Credenciales incorrectas")
-                return None
-            
+                
+                return None, "Credenciales no válidas o respuesta inesperada."
+                
         except Exception as e:
-            st.error(f"Error de login: {e}")
-            return None
+            error_str = str(e)
+            if "422" in error_str:
+                msg = "❌ El formato del email no es válido."
+            elif "401" in error_str:
+                msg = "❌ Credenciales incorrectas."
+            else:
+                msg = f"Ocurrió un error: {error_str}"
+            return None, msg
+    
     
     def get_me(self) -> Optional[Dict]:
         """Obtener usuario actual usando api_client con mejor manejo"""
