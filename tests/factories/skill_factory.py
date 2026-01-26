@@ -1,5 +1,6 @@
 # tests/factories/skill_factory.py
 import factory
+from factory.declarations import Sequence
 from tests.factories.base_factory import BaseFactory
 from models.skill_model import Skill
 
@@ -10,4 +11,4 @@ class SkillFactory(BaseFactory):
     class Meta:
         model = Skill
     
-    name = factory.Sequence(lambda n: f"skill_{n}")
+    name = Sequence(lambda n: f"skill_{n}")
