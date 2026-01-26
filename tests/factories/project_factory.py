@@ -1,8 +1,9 @@
 # tests/factories/project_factory.py
 import factory
-from datetime import datetime, timedelta
+from factory.declarations import  LazyAttribute, Sequence
+from factory.faker import Faker
+from datetime import datetime, timedelta, timezone
 from tests.factories.base_factory import BaseFactory
-from tests.factories.category_factory import CategoryFactory
 from models.project_model import Project
 from domain.projects_enums import Project_status, Project_priority
 
@@ -13,16 +14,22 @@ class ProjectFactory(BaseFactory):
     class Meta:
         model = Project
     
-    name = factory.Faker("catch_phrase")
-    description = factory.Faker("text", max_nb_chars=500)
-    deadline = factory.LazyFunction(lambda: datetime.now() + timedelta(days=30))
+    name = Sequence(lambda n: f"Project {n}")
+    description = Faker("text", max_nb_chars=500)
+    deadline = LazyAttribute(lambda obj: datetime.now(timezone.utc) + timedelta(days=30))
     status = Project_status.not_assigned
     priority = Project_priority.medium
-    category = factory.SubFactory(CategoryFactory)
     
-    class Params:
-        # Traits para diferentes estados
-        assigned = factory.Trait(status=Project_status.assigned)
-        completed = factory.Trait(status=Project_status.completed)
-        high_priority = factory.Trait(priority=Project_priority.high)
-        low_priority = factory.Trait(priority=Project_priority.low)
+    @LazyAttribute
+    def category(self):
+        from tests.factories.base_factory import get_session
+        from models.category_model import Category
+        
+        session = get_session()
+        if session:
+            category = session.query(Category).filter(Category.id == 1).first()
+            if not category:
+                from tests.factories.category_factory import CategoryFactory
+                category = CategoryFactory.create()
+            return category
+        return None
