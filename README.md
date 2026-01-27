@@ -1,8 +1,13 @@
-# 📖 GUÍA DE EJECUCIÓN DEL PROYECTO VOLUNTEER CRUD
+# 📖 GUÍA DE EJECUCIÓN DEL CRUD VOLUNTEER TECH
 
 ## 🚀 DESCRIPCIÓN
 
-Proyecto backend FastAPI + SQLAlchemy + Alembic para la gestión de voluntarios y sus entidades relacionadas (usuarios, habilidades, proyectos, categorías).
+Sistema completo de gestión de voluntarios con arquitectura frontend-backend:
+
+- **Backend**: API REST con FastAPI + SQLAlchemy + Alembic + JWT authentication
+- **Frontend**: Aplicación web interactiva con Streamlit
+- **Base de datos**: MySQL 8.0+ con migraciones automatizadas
+- **Funcionalidades**: Gestión completa de usuarios, voluntarios, proyectos, habilidades, categorías y asignaciones
 
 ---
 
@@ -14,55 +19,31 @@ Proyecto backend FastAPI + SQLAlchemy + Alembic para la gestión de voluntarios 
 - MySQL 8.0+
 - Git
 
-### **Dependencias Python:**
-
-```bash
-pip install -r requirements.txt
-```
-
 ---
 
 ## 📁 ESTRUCTURA DEL PROYECTO
 
 ```
 Proyecto2_CRUD_Equipo4/
-├── .env                          # ⚠️ Variables de entorno (NO subir a git)
-├── alembic/                      # 📊 Migraciones de base de datos
-│   ├── versions/                   # Archivos de migración generados
-│   ├── env.py                      # Configuración de Alembic
-│   └── script.py.mako              # Template para migraciones
-├── config/                        # ⚙️ Configuración
-│   └── config_variables.py          # Variables de entorno con defaults
-├── controllers/                   # 🎮 Lógica de negocio
-│   ├── users_controller.py
-│   ├── volunteer_controller.py
-│   ├── project_controller.py
-│   ├── category_controller.py
-│   └── skill_controller.py
-├── database/                      # 🗄️ Configuración de base de datos
-│   └── database.py                 # Engine, sesión y modelo base
-├── domain/                        # 📋 Enums
-│   ├── projects_enums.py
-│   └── volunteer_enum.py
-├── models/                        # 📊 Modelos SQLAlchemy
-│   ├── users_model.py
-│   ├── volunteers_model.py
-│   ├── project_model.py
-│   ├── category_model.py
-│   └── skill_model.py
-├── routes/                        # 🌐 Endpoints FastAPI
-│   ├── users_routes.py
-│   ├── volunteer_routes.py
-│   ├── project_routes.py
-│   └── category_routes.py
-├── schemas/                       # 📄 Schemas Pydantic (DTOs)
-│   ├── users_schema.py
-│   ├── volunteer_schema.py
-│   ├── project_schema.py
-│   └── category_schemas.py
-├── main.py                        # 🚀 Aplicación principal
-├── alembic.ini                   # ⚙️ Configuración de Alembic
-└── requirements.txt                # 📦 Dependencias
+├── app/                           # 🚀 Backend FastAPI
+│   ├── config/                    # ⚙️ Configuración y logging
+│   ├── controllers/               # 🎮 Lógica de negocio
+│   ├── database/                  # 🗄️ Configuración de base de datos
+│   ├── domain/                    # 📋 Enums y constantes
+│   ├── models/                    # 📊 Modelos SQLAlchemy
+│   ├── routes/                    # 🌐 Endpoints FastAPI
+│   ├── schemas/                   # 📄 Schemas Pydantic (DTOs)
+│   ├── utils/                     # 🔧 Utilidades (CSV, seguridad)
+│   └── main.py                    # 🚀 Aplicación principal FastAPI
+├── streamlit_ui/                  # 🖥️ Frontend Streamlit
+│   ├── config/                    # ⚙️ Configuración de Streamlit
+│   ├── components/                # 🧩 Componentes reutilizables
+│   ├── pages/                     # 📄 Páginas de la aplicación
+│   └── app.py                     # 🚀 Aplicación principal Streamlit
+├── alembic/                       # 📊 Migraciones de base de datos
+├── .env                           # ⚠️ Variables de entorno (NO subir a git)
+├── alembic.ini                    # ⚙️ Configuración de Alembic
+└── requirements.txt               # 📦 Dependencias
 ```
 
 ---
@@ -82,7 +63,12 @@ cd Proyecto2_CRUD_Equipo4
 
 ```bash
 python -m venv .venv
+
+# En macOS:
 source .venv/bin/activate
+
+# En Windows:
+.venv\Scripts\activate
 ```
 
 #### **1.3 Instalar dependencias:**
@@ -105,11 +91,10 @@ cp .env.example .env
 # En macOS con Homebrew:
 brew services start mysql
 
-# En Ubuntu/Debian:
-sudo systemctl start mysql
+# Windows:
+net start mysql
 
-# Verificar estado:
-brew services list | grep mysql
+
 ```
 
 ### **2. Configuración de base de datos**
@@ -133,11 +118,26 @@ source .env
 alembic upgrade head
 ```
 
-### **3. Iniciar aplicación**
+### **Opción A: Iniciar solo el backend (API REST)**
 
 ```bash
 
 uvicorn main:app --reload
+```
+
+### **Opción B: Iniciar el sistema completo (Backend + Frontend)**
+
+#### 2. Iniciar ambos servicios
+
+```bash
+# Terminal 1: Iniciar backend
+source .venv/bin/activate
+uvicorn app.main:app --reload
+
+# Terminal 2: Iniciar frontend Streamlit
+source .venv/bin/activate
+cd streamlit_ui
+streamlit run app.py
 ```
 
 ---
@@ -200,6 +200,31 @@ alembic downgrade <revision_id>
 - Cambiar contraseña por defecto de MySQL
 - Usar variables de entorno para passwords
 
+### **Sistema de autenticación JWT**
+
+El sistema incluye autenticación basada en tokens JWT con los siguientes roles:
+
+- **Administrador**: Acceso completo a todas las funcionalidades
+- **Voluntario**: Acceso limitado a su perfil y proyectos asignados
+
+### **Flujo de autenticación**
+
+1. **Inicio de sesión**: Email + contraseña
+2. **Generación de token JWT**: Validez configurable
+3. **Acceso a recursos**: Verificación de token en cada petición
+4. **Roles y permisos**: Control de acceso basado en roles
+
+### **Variables de entorno para seguridad**
+
+```bash
+# Configuración JWT
+SECRET_KEY=tu_clave_secreta_aqui
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+```
+
+````
+
 ---
 
 ## 🐛 PROBLEMAS COMUNES Y SOLUCIONES
@@ -209,7 +234,7 @@ alembic downgrade <revision_id>
 ```bash
 # Solución: Aplicar migraciones
 alembic upgrade head
-```
+````
 
 ### **Error: "Access denied for user"**
 
