@@ -1,4 +1,3 @@
-# tests/factories/volunteer_factory.py
 from factory.declarations import LazyAttribute, Sequence
 from tests.factories.base_factory import BaseFactory
 from tests.factories.user_factory import UserFactory
@@ -14,5 +13,5 @@ class VolunteerFactory(BaseFactory):
     
     status = VolunteerStatus.active
     
-    # 🔥 Simplificado - crear usuario directamente en el método
+   
     user_id = LazyAttribute(lambda obj: UserFactory.create().id)

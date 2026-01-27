@@ -1,4 +1,3 @@
-# tests/models/project_skill.py
 from sqlalchemy import Column, Integer, ForeignKey, DateTime, UniqueConstraint
 from sqlalchemy.orm import relationship
 from database.database import Base
@@ -16,6 +15,6 @@ class ProjectSkill(Base):
     
    
     
-    # Relaciones opcionales para facilitar tests
+    
     project = relationship("Project")
     skill = relationship("Skill")

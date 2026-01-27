@@ -1,4 +1,3 @@
-# tests/factories/user_factory.py
 from factory.declarations import Sequence, LazyAttribute
 from factory.faker import Faker
 from tests.factories.base_factory import BaseFactory
@@ -18,7 +17,6 @@ class UserFactory(BaseFactory):
     phone = Sequence(lambda n: f"600000{n:03}")
     birth_date = Faker("date_of_birth", minimum_age=18, maximum_age=65)
     
-    # Usar LazyAttribute para obtener el rol de la sesión
     role = LazyAttribute(lambda obj: _get_or_create_default_role())
 
 
@@ -27,7 +25,7 @@ def _get_or_create_default_role():
     from tests.factories.base_factory import get_session
     from models.role_model import Role
     
-    session = get_session()  # 🔥 Usar get_session() en lugar de _session.get()
+    session = get_session()  
     if session:
         # Intenta obtener el rol con ID 2, si no existe lo crea
         role = session.query(Role).filter(Role.id == 2).first()

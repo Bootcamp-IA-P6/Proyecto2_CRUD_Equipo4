@@ -1,5 +1,5 @@
-# tests/factories/role_factory.py
 import factory
+from factory.declarations import  Sequence
 from tests.factories.base_factory import BaseFactory
 from models import Role
 

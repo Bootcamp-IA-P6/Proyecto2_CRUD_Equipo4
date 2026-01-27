@@ -1,4 +1,3 @@
-# tests/factories/volunteer_skill_factory.py
 import factory
 from tests.factories.base_factory import BaseFactory
 from tests.factories.volunteer_factory import VolunteerFactory
@@ -12,7 +11,7 @@ class VolunteerSkillFactory(BaseFactory):
     class Meta:
         model = VolunteerSkill
     
-    # Solo generar IDs, no objetos completos
+    
     volunteer_id = factory.LazyFunction(lambda: VolunteerFactory().id)
     skill_id = factory.LazyFunction(lambda: SkillFactory().id)
     deleted_at = None

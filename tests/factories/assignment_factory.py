@@ -14,11 +14,11 @@ class AssignmentFactory(SQLAlchemyModelFactory):
         sqlalchemy_session = db_session
         sqlalchemy_session_persistence = "flush"
 
-    # Creamos los objetos relacionados con SubFactory pero solo para extraer sus IDs
+
     project_skill_id = factory.SelfAttribute("project_skill.id")
     volunteer_skill_id = factory.SelfAttribute("volunteer_skill.id")
 
-    # Subfactories para crear los objetos temporales
+ 
     project_skill = factory.SubFactory(ProjectSkillFactory)
     volunteer_skill = factory.SubFactory(VolunteerSkillFactory)
 

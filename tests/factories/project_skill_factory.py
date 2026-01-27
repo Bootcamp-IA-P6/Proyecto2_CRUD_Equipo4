@@ -1,5 +1,6 @@
-# tests/factories/project_skill_factory.py
+
 import factory
+from factory.declarations import  LazyAttribute, SubFactory
 from tests.factories.base_factory import BaseFactory
 from tests.factories.project_factory import ProjectFactory
 from tests.factories.skill_factory import SkillFactory

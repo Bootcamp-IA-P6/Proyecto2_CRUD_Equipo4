@@ -1,9 +1,7 @@
-# tests/factories/base_factory.py
 import factory
 from sqlalchemy.orm import Session as SessionType
 
 
-# Variable global para almacenar la sesión compartida
 _session = None
 
 
@@ -31,9 +29,9 @@ class BaseFactory(factory.alchemy.SQLAlchemyModelFactory):
     
     class Meta:
         abstract = True
-        sqlalchemy_session_factory = get_factory_session  # Usa función para obtener sesión
+        sqlalchemy_session_factory = get_factory_session 
         sqlalchemy_session_persistence = "flush"
 
 
-# Alias para mantener compatibilidad 
+
 SQLAlchemyFactory = BaseFactory

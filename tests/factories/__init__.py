@@ -1,4 +1,3 @@
-# tests/factories/__init__.py
 from .base_factory import SQLAlchemyFactory
 from .role_factory import RoleFactory
 from .user_factory import UserFactory

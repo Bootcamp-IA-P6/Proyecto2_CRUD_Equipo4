@@ -1,5 +1,6 @@
-# tests/factories/category_factory.py
 import factory
+from factory.declarations import  Sequence
+from factory.faker import Faker
 from tests.factories.base_factory import BaseFactory
 from models.category_model import Category
 

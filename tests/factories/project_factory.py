@@ -1,4 +1,3 @@
-# tests/factories/project_factory.py
 import factory
 from factory.declarations import  LazyAttribute, Sequence
 from factory.faker import Faker

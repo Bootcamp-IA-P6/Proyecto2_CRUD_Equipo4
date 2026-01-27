@@ -1,4 +1,3 @@
-# tests/unit/test_volunteer.py
 from controllers.volunteer_controller import (
     create_volunteer,
     get_volunteers,
@@ -29,10 +28,9 @@ def setup_pagination():
     yield
 
 
-# ==================== CREATE TESTS ====================
 def test_create_volunteer_success(db_session):
     """Test para crear un voluntario exitosamente"""
-    # Arrange
+   
     role = RoleFactory.default()
     user = UserFactory.create()
     
@@ -41,18 +39,16 @@ def test_create_volunteer_success(db_session):
         status=VolunteerStatus.active
     )
     
-    # Act
     result = create_volunteer(db_session, volunteer_data)
     
-    # Assert
     assert result.id is not None
     assert result.user_id == user.id
-    assert str(result.status).split('.')[-1] == "active" # 🔥 Convertir a string
+    assert str(result.status).split('.')[-1] == "active" 
 
 
 def test_create_volunteer_user_not_found(db_session):
     """Test crear voluntario con usuario inexistente"""
-    # Arrange
+   
     role = RoleFactory.default()
     
     volunteer_data = VolunteerCreate(
@@ -60,7 +56,7 @@ def test_create_volunteer_user_not_found(db_session):
         status=VolunteerStatus.active
     )
     
-    # Act & Assert
+   
     with pytest.raises(HTTPException) as exc_info:
         create_volunteer(db_session, volunteer_data)
     
@@ -68,69 +64,61 @@ def test_create_volunteer_user_not_found(db_session):
     assert "not found" in exc_info.value.detail.lower()
 
 
-# ==================== READ TESTS ====================
+
 def test_get_volunteers_success(db_session):
     """Test para obtener lista de voluntarios"""
-    # Arrange
+   
     role = RoleFactory.default()
     VolunteerFactory.create_batch(3)
     
-    # Act
     result = get_volunteers(db_session)
     
-    # Assert
     assert len(result.items) == 3
     assert result.total == 3
 
 
 def test_get_volunteers_empty(db_session):
     """Test cuando no hay voluntarios"""
-    # Arrange
+   
     role = RoleFactory.default()
     
-    # Act
     result = get_volunteers(db_session)
     
-    # Assert
     assert len(result.items) == 0
     assert result.total == 0
 
 
 def test_get_volunteers_excludes_deleted(db_session):
     """Test que voluntarios eliminados no aparecen"""
-    # Arrange
+   
     role = RoleFactory.default()
     active = VolunteerFactory.create()
     deleted = VolunteerFactory.create(deleted_at=datetime.now(timezone.utc))
     
-    # Act
     result = get_volunteers(db_session)
     
-    # Assert
     assert len(result.items) == 1
     assert result.items[0].id == active.id
 
 
 def test_get_volunteer_success(db_session):
     """Test obtener voluntario por ID"""
-    # Arrange
+   
     role = RoleFactory.default()
     volunteer = VolunteerFactory.create()
     
-    # Act
     result = get_volunteer(db_session, volunteer.id)
     
-    # Assert
     assert result.id == volunteer.id
     assert result.user_id == volunteer.user_id
 
 
 def test_get_volunteer_not_found(db_session):
     """Test voluntario no encontrado"""
-    # Arrange
+   
     role = RoleFactory.default()
     
-    # Act & Assert
+   
     with pytest.raises(HTTPException) as exc_info:
         get_volunteer(db_session, 999)
     
@@ -138,31 +126,119 @@ def test_get_volunteer_not_found(db_session):
     assert exc_info.value.detail == "Volunteer not found"
 
 
-# ==================== UPDATE TESTS ====================
+
 def test_update_volunteer_success(db_session):
     """Test actualizar status de voluntario"""
-    # Arrange
+   
     role = RoleFactory.default()
     volunteer = VolunteerFactory.create(status=VolunteerStatus.active)
     
     update_data = VolunteerUpdate(status=VolunteerStatus.inactive)
     
-    # Act
     result = update_volunteer(db_session, volunteer.id, update_data)
     
-    # Assert
     assert result.id == volunteer.id
     assert result.status == VolunteerStatus.inactive 
 
 
 def test_update_volunteer_not_found(db_session):
     """Test actualizar voluntario inexistente"""
-    # Arrange
+   
     role = RoleFactory.default()
     update_data = VolunteerUpdate(status=VolunteerStatus.inactive)
     
-    # Act & Assert
+   
     with pytest.raises(HTTPException) as exc_info:
         update_volunteer(db_session, 999, update_data)
     
     assert exc_info.value.status_code == 404
+    
+
+
+def test_delete_volunteer_not_found(db_session):
+    """Test eliminar voluntario inexistente"""
+   
+    role = RoleFactory.default()
+    
+  
+    with pytest.raises(HTTPException) as exc_info:
+        delete_volunteer(db_session, 999)
+    
+    assert exc_info.value.status_code == 404
+
+
+def test_delete_volunteer_already_deleted(db_session):
+    """Test eliminar voluntario ya eliminado"""
+   
+    role = RoleFactory.default()
+    deleted = VolunteerFactory.create(deleted_at=datetime.now(timezone.utc))
+    
+  
+    with pytest.raises(HTTPException) as exc_info:
+        delete_volunteer(db_session, deleted.id)
+    
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Volunteer not found"
+
+
+
+def test_get_volunteer_with_skills_success(db_session):
+    """Test obtener voluntario con sus skills"""
+   
+    role = RoleFactory.default()
+    volunteer = VolunteerFactory.create()
+    skill1 = SkillFactory.create()
+    skill2 = SkillFactory.create()
+    
+    add_skill_to_volunteer(db_session, volunteer.id, skill1.id)
+    add_skill_to_volunteer(db_session, volunteer.id, skill2.id)
+    
+  
+    result = get_volunteer_with_skills(db_session, volunteer.id)
+    
+  
+    assert result.id == volunteer.id
+    assert len(result.skills) == 2
+
+
+def test_add_skill_to_volunteer_success(db_session):
+    """Test agregar skill a voluntario"""
+   
+    role = RoleFactory.default()
+    volunteer = VolunteerFactory.create()
+    skill = SkillFactory.create()
+    
+  
+    result = add_skill_to_volunteer(db_session, volunteer.id, skill.id)
+    
+  
+    assert result.id == volunteer.id
+
+
+def test_add_skill_volunteer_not_found(db_session):
+    """Test agregar skill a voluntario inexistente"""
+   
+    role = RoleFactory.default()
+    skill = SkillFactory.create()
+    
+  
+    with pytest.raises(HTTPException) as exc_info:
+        add_skill_to_volunteer(db_session, 999, skill.id)
+    
+    assert exc_info.value.status_code == 404
+
+
+def test_add_skill_duplicate(db_session):
+    """Test agregar skill duplicada"""
+   
+    role = RoleFactory.default()
+    volunteer = VolunteerFactory.create()
+    skill = SkillFactory.create()
+    
+    add_skill_to_volunteer(db_session, volunteer.id, skill.id)
+    
+  
+    with pytest.raises(HTTPException) as exc_info:
+        add_skill_to_volunteer(db_session, volunteer.id, skill.id)
+    
+    assert exc_info.value.status_code == 409
