@@ -223,8 +223,6 @@ def show_volunteer_dashboard():
         # Skills
         skills_response = api_client.get_volunteer_skills(volunteer_id)
     
-        # Dependiendo de tu 'VolunteerWithSkills', las skills pueden estar 
-        # directamente en la raíz del dict o dentro de una llave 'skills'
         skills = skills_response.get('skills', [])
         
         st.markdown("## 🛠️ Mis Skills")
