@@ -16,35 +16,26 @@ class APIClient:
         
         return headers
     
+    
+    
     def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict:
-        """Request con autenticación y manejo de errores"""
-        try:
-            url = f"{self.base_url}{endpoint}"
-            
-            # Añadir headers autenticación
-            if 'headers' not in kwargs:
-                kwargs['headers'] = {}
-            kwargs['headers'].update(self._get_headers())
-            
-            response = requests.request(method, url, **kwargs)
-            response.raise_for_status()
-            
-            return response.json()
-            
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 401:
-                st.error("Sesión expirada. Por favor inicia sesión nuevamente.")
-                st.session_state.clear()
-                st.rerun()
-            else:
-                st.error(f"Error HTTP {e.response.status_code}: {e.response.text}")
-            return {}
-        except requests.exceptions.ConnectionError:
-            st.error("No se puede conectar al servidor API. Verifique que esté corriendo.")
-            return {}
-        except Exception as e:
-            st.error(f"Error de conexión: {e}")
-            return {}
+        url = f"{self.base_url}{endpoint}"
+        
+        if 'headers' not in kwargs:
+            kwargs['headers'] = {}
+        kwargs['headers'].update(self._get_headers())
+        
+       
+        response = requests.request(method, url, **kwargs)
+        
+        if response.status_code == 401:
+            st.session_state.clear()
+
+            return {"error": "unauthorized"}
+
+        
+        response.raise_for_status() 
+        return response.json()
     
     # Autenticación
     def login(self, email: str, password: str) -> Dict:
@@ -71,6 +62,9 @@ class APIClient:
     def get_users(self, page: int = 1, size: int = 50) -> Dict:
         return self._make_request("GET", f"/users/?page={page}&size={size}")
     
+    def get_user(self, user_id: int) -> Dict:
+        return self._make_request("GET", f"/users/{user_id}")
+    
     def create_user(self, user_data: Dict) -> Dict:
         return self._make_request("POST", "/users/", json=user_data)
     
@@ -81,8 +75,8 @@ class APIClient:
     def get_volunteers(self, page: int = 1, size: int = 50) -> Dict:
         return self._make_request("GET", f"/volunteers/?page={page}&size={size}")
     
-    def get_volunteer(self, volunteer_id: int) -> Dict:
-        return self._make_request("GET", f"/volunteers/{volunteer_id}")
+    def get_volunteer(self, user_id: int) -> Dict:
+        return self._make_request("GET", f"/volunteers/{user_id}")
     
     def create_volunteer(self, volunteer_data: Dict) -> Dict:
         return self._make_request("POST", "/volunteers/", json=volunteer_data)
@@ -93,8 +87,8 @@ class APIClient:
     def add_skill_to_volunteer(self, volunteer_id: int, skill_id: int) -> Dict:
         return self._make_request("POST", f"/volunteers/{volunteer_id}/skills/{skill_id}")
     
-    def get_volunteer_skills(self, volunteer_id: int) -> Dict:
-        return self._make_request("GET", f"/volunteers/{volunteer_id}/skills")
+    def get_volunteer_skills(self, user_id: int) -> Dict:
+        return self._make_request("GET", f"/volunteers/{user_id}/skills/")
     
     # Projects
     def get_project(self, project_id: int) -> Dict:

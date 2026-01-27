@@ -1,6 +1,6 @@
 PAGE_CONFIG = {
-    "page_title": "Sistema de Voluntarios",
-    "page_icon": "🏠",
+    "page_title": "Volunteers TECH",
+    "page_icon": "🤝",
     "layout": "wide",
     "initial_sidebar_state": "expanded"
 }
