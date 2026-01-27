@@ -1,0 +1,46 @@
+services:
+
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: always
+    env_file:
+      - .env.docker
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: fastapi_api
+    restart: always
+    env_file:
+      - .env.docker
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+    ports:
+      - "${API_PORT}:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  streamlit:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.streamlit
+    container_name: streamlit_ui
+    restart: always
+    depends_on:
+      - api
+    volumes:
+      - .:/app
+    ports:
+      - "${STREAMLIT_PORT}:8501"
+    command: streamlit run streamlit_UI/app.py --server.port=8501 --server.address=0.0.0.0
+
+volumes:
+  mysql_data:
