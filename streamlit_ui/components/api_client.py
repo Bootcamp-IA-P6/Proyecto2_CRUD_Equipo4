@@ -87,8 +87,8 @@ class APIClient:
     def add_skill_to_volunteer(self, volunteer_id: int, skill_id: int) -> Dict:
         return self._make_request("POST", f"/volunteers/{volunteer_id}/skills/{skill_id}")
     
-    def get_volunteer_skills(self, volunteer_id: int) -> Dict:
-        return self._make_request("GET", f"/volunteers/{volunteer_id}/skills")
+    def get_volunteer_skills(self, user_id: int) -> Dict:
+        return self._make_request("GET", f"/volunteers/{user_id}/skills/")
     
     # Projects
     def get_project(self, project_id: int) -> Dict:

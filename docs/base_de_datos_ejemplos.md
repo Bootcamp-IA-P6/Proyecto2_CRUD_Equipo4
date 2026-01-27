@@ -145,7 +145,6 @@ INSERT INTO volunteer_skills (volunteer_id, skill_id) VALUES
 (2, 27),  -- Git
 
 
--- LAS SIGUIENTES NO ESTAN RELACIONADAS AUN:
 -- María López - Data Scientist
 (3, 1),   -- Python
 (3, 30),  -- Machine Learning
@@ -188,7 +187,6 @@ INSERT INTO projects (id, name, description, deadline, status, priority, categor
 (5, 'Migración a Microservicios', 'Transformación de aplicación monolítica a arquitectura de microservicios en AWS', '2026-05-30 00:00:00', 'not assigned', 'medium', 5),
 (6, 'Optimización Base de Datos', 'Rediseño y optimización de consultas para sistema de gestión de inventario con más de 1M registros', '2026-03-25 00:00:00', 'not assigned', 'medium', 6);
 
---LOS SIGUIENTES PROYECTOS NO ESTAN EN DDBB AUN:
 (7, 'Dashboard Analytics', 'Sistema de análisis de datos masivos con visualizaciones interactivas para plataforma de e-commerce', '2026-04-15 00:00:00', 'not assigned', 'low', 7),
 (8, 'API RESTful Gateway', 'Desarrollo de API Gateway centralizado para gestión de microservicios', '2026-03-20 00:00:00', 'not assigned', 'medium', 1),
 (9, 'Chatbot Inteligente', 'Implementación de chatbot con NLP para servicio al cliente automático', '2026-04-10 00:00:00', 'not assigned', 'low', 3),
@@ -220,7 +218,6 @@ INSERT INTO project_skills (project_id, skill_id) VALUES
 (3, 39),  -- Data Science
 (3, 24),  -- MySQL
 
---LO SIGUIENTE NO ESTA EN BASE DE DATOS:
 -- Auditoría de Seguridad Web
 (4, 34),  -- Ciberseguridad
 (4, 35),  -- Pentesting
@@ -269,55 +266,12 @@ INSERT INTO project_skills (project_id, skill_id) VALUES
 (10, 28); -- CI/CD
 ```
 
----
-
-## Credenciales de Prueba
-
-### Usuarios Principales:
-
-1. **Admin Sistema**
-   - Email: `admin@voluntariotech.org`
-   - Contraseña: `admin123`
-   - Rol: Administrador
-
-2. **Ana García (Full Stack)**
-   - Email: `ana.garcia@techmail.com`
-   - Contraseña: `volunteer123`
-   - Habilidades: Python, JavaScript, React, Node.js, PostgreSQL, Git
-
-3. **Carlos Rodríguez (Backend)**
-   - Email: `carlos.rodriguez@devmail.com`
-   - Contraseña: `volunteer123`
-   - Habilidades: Python, Django, FastAPI, PostgreSQL, MySQL, Git
-
-4. **María López (Data Scientist)**
-   - Email: `maria.lopez@datamail.com`
-   - Contraseña: `volunteer123`
-   - Habilidades: Python, Machine Learning, Deep Learning, TensorFlow, Data Science, Análisis Estadístico, Apache Spark
-
-5. **David Chen (DevOps)**
-   - Email: `david.chen@techmail.com`
-   - Contraseña: `volunteer123`
-   - Habilidades: Go, Docker, Kubernetes, AWS, CI/CD, Terraform
-
-6. **Laura Martínez (Cybersecurity)**
-   - Email: `laura.martinez@cybermail.com`
-   - Contraseña: `volunteer123`
-   - Habilidades: Python, Ciberseguridad, Pentesting, Análisis de Malware, Git
-
-7. **Roberto Silva (Mobile Dev)**
-   - Email: `roberto.silva@devmail.com`
-   - Contraseña: `volunteer123`
-   - Habilidades: JavaScript, Java, C#, Git
 
 ---
 
 ## Notas Técnicas
 
-### Contraseñas Hasheadas:
-- Todas las contraseñas están hasheadas usando bcrypt
-- El hash `$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/9bp.G.MiK` corresponde a: `volunteer123`
-- El método `hash_password()` del sistema usa `pwd_context.hash(password[:72])`
+
 
 ### Fechas:
 - Las fechas de deadline están configuradas para 2026

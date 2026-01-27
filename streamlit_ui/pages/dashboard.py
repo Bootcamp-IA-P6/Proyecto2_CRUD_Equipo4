@@ -192,7 +192,7 @@ def show_volunteer_dashboard():
         volunteer=api_client.get_volunteer(user_id)
         
         # Encontrar voluntario correspondiente al usuario actual
-        volunteer_id = volunteer['id']
+        volunteer_id = volunteer.get('id')
         
         
         if not volunteer:
@@ -221,7 +221,12 @@ def show_volunteer_dashboard():
                 st.rerun()
         
         # Skills
-        skills = volunteer.get('skills', [])
+        skills_response = api_client.get_volunteer_skills(volunteer_id)
+    
+        # Dependiendo de tu 'VolunteerWithSkills', las skills pueden estar 
+        # directamente en la raíz del dict o dentro de una llave 'skills'
+        skills = skills_response.get('skills', [])
+        
         st.markdown("## 🛠️ Mis Skills")
         
         if skills:

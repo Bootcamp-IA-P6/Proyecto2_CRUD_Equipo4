@@ -44,7 +44,7 @@ def show_sidebar():
         return "login"
     
     # Usuario autenticado
-    st.sidebar.markdown("# 🏠 Sistema de Voluntarios")
+    st.sidebar.markdown("# Volunteers TECH{}}")
     user = auth.get_current_user()
     is_admin = auth.is_admin()
     
@@ -99,7 +99,7 @@ def show_sidebar():
     return st.session_state.current_page
 
 def show_login():
-    st.markdown("# 🔐 Sistema de Voluntarios")
+    st.markdown("# 🤝 Volunteers TECH")
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
