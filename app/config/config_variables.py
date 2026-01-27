@@ -10,6 +10,7 @@ class Settings:
     DB_HOST: str = os.getenv("DB_HOST", "localhost")
     DB_DEV_NAME: str = os.getenv("DB_DEV_NAME", "volunteer_crud")
     DB_TEST_NAME: str = os.getenv("DB_TEST_NAME", "volunteer_crud_test")
+    API_URL: str = os.getenv("API_BASE_URL")
 
 
 settings = Settings() 

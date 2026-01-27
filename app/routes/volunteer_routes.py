@@ -33,7 +33,6 @@ def create(
     
     ## Permisos
     - ✅ Admin: puede crear perfil de voluntario para cualquier usuario
-    - ✅ Voluntario: solo puede crear su propio perfil (user_id debe coincidir)
     
     ## Parámetros
     - **volunteer**: Objeto VolunteerCreate con información del voluntario
@@ -46,9 +45,7 @@ def create(
     POST /volunteers/
     {
         "user_id": 42,
-        "availability": "Fin de semana",
-        "experience": "3 años en ONGs",
-        "motivation": "Ayudar a la comunidad"
+        "status": active
     }
     ```
     """

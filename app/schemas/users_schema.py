@@ -15,6 +15,7 @@ class UserCreate(UserBase):
 
 class UserOut(UserBase):
     id: int
+    role_id: int
     created_at: datetime
     updated_at: datetime
     

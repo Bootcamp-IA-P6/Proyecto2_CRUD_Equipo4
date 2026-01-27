@@ -3,17 +3,17 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 import os
 
-# config de Alembic
+# Alembic config
 config = context.config
 
-# logging
+# Logging
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# importar Base y engine reales
-from app.database.database import Base, engine
+# Importar Base
+from app.database.database import Base
 
-# Importar todos los modelos explícitamente para que Alembic los vea
+# Importar modelos (OBLIGATORIO)
 from app.models.users_model import User
 from app.models.volunteers_model import Volunteer
 from app.models.skill_model import Skill
@@ -24,29 +24,39 @@ from app.models.category_model import Category
 from app.models.role_model import Role
 from app.models.assignment_model import Assignment
 
-
-
-# metadata de todos los modelos
+# Metadata
 target_metadata = Base.metadata
-
-# OFFLINE no soportado
-def run_migrations_offline():
-    raise RuntimeError("Offline migrations not supported with this configuration")
 
 # ONLINE usando tu engine real
 def run_migrations_online():
-    connectable = engine
+    # Construir URL desde ENV (Docker-friendly)
+    db_url = (
+        f"{os.getenv('DB_DIALECT')}+pymysql://"
+        f"{os.getenv('DB_USERNAME')}:{os.getenv('DB_PASSWORD')}"
+        f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}"
+        f"/{os.getenv('DB_DEV_NAME')}"
+    )
+
+    config.set_main_option("sqlalchemy.url", db_url)
+
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+
     with connectable.connect() as connection:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            # opcional: muestra SQL en consola
-            compare_type=True,
-            render_as_batch=True  # útil si en el futuro haces SQLite
+            compare_type=True
         )
 
         with context.begin_transaction():
             context.run_migrations()
 
-# Ejecuta siempre ONLINE
-run_migrations_online()
+
+if context.is_offline_mode():
+    raise RuntimeError("Offline migrations not supported")
+else:
+    run_migrations_online()
