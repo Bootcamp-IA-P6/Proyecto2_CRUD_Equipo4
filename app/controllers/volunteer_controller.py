@@ -54,9 +54,9 @@ def get_volunteers(db: Session) -> Page[VolunteerOut]:
 
 #Get Volunteer by ID
 def get_volunteer(db: Session, id: int):
-    logger.info(f"Trying to get volunteer {id}")
+    logger.info(f"Trying to get volunteer for user_id:{id}")
 
-    volunteer = db.query(Volunteer).filter(Volunteer.id == id, Volunteer.deleted_at.is_(None)).first()
+    volunteer = db.query(Volunteer).filter(Volunteer.user_id == id, Volunteer.deleted_at.is_(None)).first()
 
     if not volunteer:
         logger.warning(f"Volunteer with ID {id} not found")
@@ -99,7 +99,7 @@ def delete_volunteer(db: Session, id: int):
 
 #Get Volunteer
 def get_volunteer_with_skills(db: Session, volunteer_id: int):
-    volunteer = get_volunteer(db, volunteer_id)     #Get Volunteer
+    volunteer = db.query(Volunteer).filter(Volunteer.id == volunteer_id, Volunteer.deleted_at.is_(None)).first()
 
     #Get active skills using join 
     stmt = (select(Skill).select_from(

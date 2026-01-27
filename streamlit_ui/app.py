@@ -44,7 +44,7 @@ def show_sidebar():
         return "login"
     
     # Usuario autenticado
-    st.sidebar.markdown("# 🏠 Sistema de Voluntarios")
+    st.sidebar.markdown("# Volunteers TECH{}}")
     user = auth.get_current_user()
     is_admin = auth.is_admin()
     
@@ -99,26 +99,32 @@ def show_sidebar():
     return st.session_state.current_page
 
 def show_login():
-    """Página de login mejorada"""
-    st.markdown("# 🔐 Sistema de Voluntarios")
-    st.markdown("## Iniciar Sesión")
+    st.markdown("# 🤝 Volunteers TECH")
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        with st.form("login_form", clear_on_submit=True):
-            email = st.text_input("📧 Email", key="login_email")
-            password = st.text_input("🔒 Contraseña", type="password", key="login_password")
-            
-            submitted = st.form_submit_button("🚀 Iniciar Sesión", type="primary", use_container_width=True)
+        # Contenedor para mensajes: se limpia y se llena según la acción
+        placeholder = st.empty()
+        
+        with st.form("login_form", clear_on_submit=False): # Cambié a False para que no se borre el email si falla
+            email = st.text_input("📧 Email")
+            password = st.text_input("🔒 Contraseña", type="password")
+            submitted = st.form_submit_button("🚀 Iniciar Sesión", use_container_width=True)
             
             if submitted:
                 if email and password:
-                    user = auth.login(email, password)
+                    
+                    user, error = auth.login(email, password)
+                    
                     if user:
-                        st.success("¡Login exitoso!")
+                        placeholder.success(f"¡Bienvenido {user['name']}!")
                         navigate_to_page("dashboard_admin" if auth.is_admin() else "dashboard_volunteer")
+                        st.rerun() 
+                    else:
+                        # Si hay error, lo mostramos arriba del formulario
+                        placeholder.error(error)
                 else:
-                    st.error("Por favor, completa todos los campos")
+                    placeholder.warning("Por favor, completa todos los campos")
 
 def show_dashboard_admin():
     """Dashboard de administrador funcional"""
